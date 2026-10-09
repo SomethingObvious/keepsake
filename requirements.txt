@@ -1,0 +1,6 @@
+# Floors, not pins: the app upgrades yt-dlp and gallery-dl itself every week,
+# so these only say what it was last tested with.
+pywebview>=6.2.1
+pystray>=0.19.5
+yt-dlp[default,curl-cffi]>=2026.8.19
+gallery-dl>=1.32.13

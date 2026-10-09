@@ -1,0 +1,19 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "reportDescriptionlessDisables": true,
+  "reportInvalidScopeDisables": true,
+  "reportNeedlessDisables": true,
+  "rules": {
+    "color-named": "never",
+    "declaration-no-important": [true, { "severity": "error" }],
+    "font-weight-notation": "numeric",
+    "max-nesting-depth": 2,
+    "selector-max-id": 1,
+    "selector-max-compound-selectors": 4,
+    "declaration-block-no-duplicate-properties": [true, { "ignore": ["consecutive-duplicates-with-different-values"] }],
+    "no-descending-specificity": true,
+    "no-unknown-animations": true,
+    "no-unknown-custom-properties": true,
+    "unit-allowed-list": ["px", "em", "%", "s", "vh", "vw", "deg", "fr"]
+  }
+}

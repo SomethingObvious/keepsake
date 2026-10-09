@@ -1,0 +1,592 @@
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url("fonts/archivo-latin-standard-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+
+:root {
+  --ground: #0a0a0a;
+  --mat: #050505;
+  --rule: #2f2f2e;
+  --edge: #4a4a47;
+  --ink: #ecebe6;
+  --dim: #aeada7;
+  --faint: #8d8c86;
+  --red: #d8322b;
+  --code-video: #2f66d8;
+  --code-audio: #e2b00e;
+  --code-images: #ecebe6;
+  --code-text: #3c9a5f;
+  --code-wait: #6b6a66;
+  --sans: "Archivo", "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", consolas, ui-monospace, monospace;
+  --gutter: 32px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  color-scheme: dark;
+  scrollbar-color: var(--edge) var(--ground);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--ground);
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+  text-rendering: optimizelegibility;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+
+a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-color: var(--edge);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+a:hover {
+  text-decoration-color: var(--ink);
+}
+
+p,
+dd {
+  text-wrap: pretty;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Small capitals pushed wide, the catalogue's voice for every label and button. */
+.links a,
+.button,
+.code-row dt,
+.fact h3,
+.foot-links a,
+.skip {
+  font-size: 12px;
+  font-weight: 500;
+  font-stretch: 118%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.wrap {
+  width: 100%;
+  max-width: calc(1180px + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.skip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  padding: 10px 14px;
+  background: var(--ink);
+  color: var(--ground);
+  transform: translateY(-200%);
+}
+
+.skip:focus-visible {
+  transform: none;
+}
+
+.bar {
+  border-bottom: 1px solid var(--rule);
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  height: 68px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.mark {
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  border: 1px solid var(--edge);
+}
+
+.arrow,
+.c-images {
+  fill: var(--code-images);
+}
+
+.c-video {
+  fill: var(--code-video);
+  background: var(--code-video);
+}
+
+.c-audio {
+  fill: var(--code-audio);
+  background: var(--code-audio);
+}
+
+.c-text {
+  fill: var(--code-text);
+  background: var(--code-text);
+}
+
+.c-wait {
+  fill: var(--code-wait);
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 500;
+  font-stretch: 125%;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.links {
+  display: flex;
+  gap: 28px;
+  margin-left: auto;
+}
+
+.links a {
+  color: var(--dim);
+}
+
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 50px;
+  padding: 0 22px;
+  border: 1px solid var(--edge);
+  color: var(--ink);
+  font-size: 13px;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.button:hover {
+  border-color: var(--ink);
+}
+
+/* The red block at the right end marks the one thing to press. */
+.primary {
+  padding-right: 42px;
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+.primary::after {
+  position: absolute;
+  inset-block: -1px;
+  right: -1px;
+  width: 9px;
+  background: var(--red);
+  content: "";
+}
+
+.primary:hover {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.ghost {
+  border-color: transparent;
+  color: var(--dim);
+}
+
+.small {
+  height: 38px;
+  padding: 0 32px 0 14px;
+  font-size: 12px;
+}
+
+.icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.4;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.hero {
+  padding-top: 104px;
+}
+
+h1 {
+  max-width: 11em;
+  margin: 0;
+  font-size: clamp(40px, 7.4vw, 96px);
+  font-weight: 300;
+  font-stretch: 125%;
+  line-height: 1.02;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 34em;
+  margin: 32px 0 0;
+  color: var(--dim);
+  font-size: 21px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 44px;
+}
+
+.fine {
+  margin: 18px 0 0;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+/* The app's signature, a download's speed drawn as one hairline. */
+.signal {
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin-top: 72px;
+  overflow: visible;
+}
+
+.signal polyline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.shot {
+  margin: 0;
+  border: 1px solid var(--edge);
+  background: var(--mat);
+}
+
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hero .shot {
+  margin-top: 28px;
+}
+
+h2 {
+  margin: 0;
+  text-wrap: balance;
+}
+
+.section {
+  padding-top: 132px;
+}
+
+.section h2 {
+  padding-top: 22px;
+  border-top: 1px solid var(--ink);
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 300;
+  font-stretch: 125%;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.intro {
+  max-width: 38em;
+  margin: 22px 0 0;
+  color: var(--dim);
+  font-size: 19px;
+}
+
+.codes,
+.faq {
+  margin: 40px 0 0;
+}
+
+.code-row,
+.qa {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 56px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.code-row dt {
+  display: flex;
+  align-self: start;
+  align-items: center;
+  gap: 14px;
+  padding-top: 4px;
+  font-size: 13px;
+}
+
+.block {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+.c-images.block {
+  background: var(--code-images);
+}
+
+dd {
+  max-width: 40em;
+  margin: 0;
+  color: var(--dim);
+}
+
+.code-row dd {
+  font-size: 18px;
+}
+
+.qa dt {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.spread {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 56px;
+  align-items: start;
+  padding-top: 132px;
+}
+
+.copy {
+  padding-top: 22px;
+  border-top: 1px solid var(--ink);
+}
+
+.copy h2 {
+  margin-bottom: 20px;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.copy p {
+  margin: 0 0 14px;
+  color: var(--dim);
+  font-size: 18px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0 56px;
+  margin-top: 28px;
+}
+
+.fact {
+  padding: 26px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.fact h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.fact p {
+  margin: 0;
+  color: var(--dim);
+}
+
+.steps {
+  margin: 36px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 16px;
+  align-items: baseline;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.step {
+  font-size: 36px;
+  font-weight: 300;
+  font-stretch: 125%;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.steps p {
+  max-width: 40em;
+  margin: 0;
+  color: var(--dim);
+  font-size: 18px;
+}
+
+.steps a {
+  color: var(--ink);
+}
+
+.foot {
+  margin-top: 150px;
+  border-top: 1px solid var(--rule);
+}
+
+.foot-row {
+  display: grid;
+  gap: 12px;
+  padding-top: 40px;
+  padding-bottom: 64px;
+}
+
+.foot-row p {
+  max-width: 60em;
+  margin: 0;
+  color: var(--faint);
+  font-size: 14px;
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin-top: 16px;
+}
+
+.foot-links a {
+  color: var(--dim);
+}
+
+.links a:hover,
+.foot-links a:hover {
+  color: var(--ink);
+}
+
+@keyframes draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .signal {
+    animation: draw 2.4s var(--ease) both;
+  }
+}
+
+@media (width < 960px) {
+  .spread,
+  .code-row,
+  .qa {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .spread {
+    gap: 28px;
+  }
+}
+
+@media (width < 720px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .links,
+  .bar .primary {
+    display: none;
+  }
+
+  .hero {
+    padding-top: 56px;
+  }
+
+  .lead {
+    font-size: 19px;
+  }
+
+  .signal {
+    margin-top: 48px;
+  }
+
+  .section,
+  .spread {
+    padding-top: 88px;
+  }
+
+  .steps li {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .step {
+    font-size: 28px;
+  }
+}

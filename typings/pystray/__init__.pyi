@@ -1,0 +1,26 @@
+from collections.abc import Callable
+from typing import ClassVar
+
+from PIL.Image import Image
+
+class MenuItem:
+    def __init__(
+        self,
+        text: str,
+        action: Callable[[], object],
+        *,
+        default: bool = ...,
+    ) -> None: ...
+
+class Menu:
+    SEPARATOR: ClassVar[MenuItem]
+    def __init__(self, *items: MenuItem) -> None: ...
+
+class Icon:
+    title: str
+    def __init__(self, name: str, icon: Image, title: str, menu: Menu) -> None: ...
+    def run(self) -> None: ...
+    def stop(self) -> None: ...
+    def notify(self, message: str, title: str | None = ...) -> None: ...
+    def _notify(self, message: str, title: str | None = None) -> None: ...
+    def _message(self, code: int, flags: int, **kwargs: object) -> None: ...
