@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#191919">
+    <title>Keepsake</title>
+    <link rel="stylesheet" href="app.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body data-mode="auto">
+    <a class="skip" href="#main">Skip to the page</a>
+    <div class="titlebar">
+      <button type="button" class="win" id="win-min" title="Minimize" aria-label="Minimize"><span data-i="minimize"></span></button>
+      <button type="button" class="win" id="win-max" title="Maximize" aria-label="Maximize"><span data-i="maximize"></span></button>
+      <button type="button" class="win close" id="win-close" title="Close" aria-label="Close"><span data-i="close"></span></button>
+    </div>
+    <aside class="rail">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon fill="#ecebe6" points="10.80,3.36 13.20,3.36 13.20,11.97 16.30,8.86 18.00,10.56 13.20,15.36 10.80,15.36 6.00,10.56 7.70,8.86 10.80,11.97"/><rect fill="#2f66d8" x="3.84" y="17.76" width="3.26" height="2.16"/><rect fill="#e2b00e" x="7.10" y="17.76" width="3.26" height="2.16"/><rect fill="#ecebe6" x="10.37" y="17.76" width="3.26" height="2.16"/><rect fill="#3c9a5f" x="13.63" y="17.76" width="3.26" height="2.16"/><rect fill="#6b6a66" x="16.90" y="17.76" width="3.26" height="2.16"/></svg></div>
+        <strong>Keepsake</strong>
+        <small>Keeps what you find online</small>
+      </div>
+      <nav aria-label="Pages">
+        <button type="button" data-tab="downloads" class="tab on"><span data-i="download"></span>Downloads<span class="count" id="nav-count"></span></button>
+        <button type="button" class="tab" data-tab="search"><span data-i="search"></span>Search</button>
+        <button type="button" class="tab" data-tab="subscriptions"><span data-i="bell"></span>Subscriptions<span class="count" id="nav-subs"></span></button>
+        <button type="button" class="tab" data-tab="library"><span data-i="grid"></span>Library</button>
+        <button type="button" class="tab" data-tab="history"><span data-i="clock"></span>History</button>
+        <button type="button" class="tab" data-tab="settings"><span data-i="sliders"></span>Settings</button>
+      </nav>
+      <div class="ready" id="app-ready" hidden>
+        <strong id="app-ready-text">An update is ready</strong>
+        <button type="button" class="btn primary small" id="app-restart">Restart to update</button>
+      </div>
+      <div class="tools">
+        <h2>Tools</h2>
+        <dl id="tools"></dl>
+        <button type="button" class="btn" id="update"><span data-i="refresh"></span>Update tools</button>
+        <p class="note" id="note"></p>
+      </div>
+    </aside>
+
+    <main id="main" tabindex="-1">
+      <!-- DOWNLOADS -->
+      <section class="page" id="downloads">
+        <div class="inner">
+          <div class="head">
+            <h1>Downloads</h1>
+            <span class="sub" id="qsummary"></span>
+          </div>
+
+          <div class="composer" id="composer">
+            <label class="visually-hidden" for="urls">Links to download</label>
+            <textarea id="urls" name="urls" autocomplete="off" rows="1" spellcheck="false" placeholder="Paste links: a video, playlist, channel, gallery or profile…"></textarea>
+            <div class="row">
+              <label class="visually-hidden" for="mode">What to download</label>
+              <select class="field" id="mode" data-set="mode" title="Auto takes the video, or the pictures when there is no video">
+                <option value="auto">Auto</option>
+                <option value="video">Video</option>
+                <option value="audio">Audio only</option>
+                <option value="images">Images</option>
+                <option value="transcript">Transcript</option>
+              </select>
+              <label class="visually-hidden" for="quality">Highest resolution</label>
+              <select class="field v" id="quality" data-set="quality">
+                <option value="best">Best quality</option>
+                <option value="2160">2160p (4K)</option>
+                <option value="1440">1440p</option>
+                <option value="1080">1080p</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+                <option value="360">360p</option>
+              </select>
+              <label class="visually-hidden" for="audio-format">Audio format</label>
+              <select class="field a" id="audio-format" data-set="audio_format">
+                <option value="mp3">MP3</option>
+                <option value="m4a">M4A (AAC)</option>
+                <option value="opus">Opus</option>
+                <option value="flac">FLAC</option>
+                <option value="wav">WAV</option>
+                <option value="best">Original, not converted</option>
+              </select>
+              <div class="go">
+                <button type="button" class="btn ghost" id="toggle-options" aria-expanded="false" aria-controls="drawer"><span data-i="sliders"></span>Options<span class="badge" id="optcount" hidden></span></button>
+                <button type="button" class="btn ghost" id="preview-btn"><span data-i="eye"></span>Preview</button>
+                <button type="button" class="btn primary" id="download-btn"><span data-i="download"></span>Download</button>
+              </div>
+            </div>
+
+            <div class="drawer" id="drawer" hidden>
+              <div class="drawer-top">
+                <label for="preset">Preset</label>
+                <select class="field" id="preset"></select>
+                <span class="dim">Sets many of these at once. Save your own from the same menu.</span>
+              </div>
+              <fieldset class="group v">
+                <legend>Video</legend>
+                <div class="pair">
+                  <label>Container
+                    <select class="field" data-set="container">
+                      <option value="mp4">MP4</option>
+                      <option value="mkv">MKV</option>
+                      <option value="webm">WebM</option>
+                      <option value="original">Original</option>
+                    </select>
+                  </label>
+                  <label>Prefer codec
+                    <select class="field" data-set="codec">
+                      <option value="h264">H.264</option>
+                      <option value="any">Any</option>
+                      <option value="h265">H.265</option>
+                      <option value="vp9">VP9</option>
+                      <option value="av1">AV1</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="check" title="Re-encodes anything that is not H.264 and AAC, on the graphics card when there is one"><input type="checkbox" class="switch" data-set="always_plays" data-lossy>Make sure it plays everywhere</label>
+                <p class="hint" data-best-hint hidden>Best quality is never re-encoded. Pick a resolution to use this.</p>
+                <label class="check" title="HDR looks washed out on most screens and in most editors"><input type="checkbox" class="switch" data-set="prefer_sdr">Prefer SDR over HDR</label>
+                <div class="pair">
+                  <label>Subtitles
+                    <select class="field" data-set="subs">
+                      <option value="off">Off</option>
+                      <option value="embed">Embed</option>
+                      <option value="download">As files (.srt)</option>
+                    </select>
+                  </label>
+                  <label>Languages
+                    <input type="text" name="sub_langs" autocomplete="off" class="field mono" data-set="sub_langs" placeholder="e.g. en, en-US…">
+                  </label>
+                </div>
+                <label class="check"><input type="checkbox" class="switch" data-set="auto_subs">Include auto-generated subtitles</label>
+                <label>Audio language
+                  <input type="text" name="audio_lang" autocomplete="off" class="field mono" data-set="audio_lang" list="languages" placeholder="original, or a code like de…">
+                </label>
+                <datalist id="languages">
+                  <option value="all">Every track (MKV)</option>
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                  <option value="ja">Japanese</option>
+                  <option value="ko">Korean</option>
+                  <option value="pt">Portuguese</option>
+                  <option value="hi">Hindi</option>
+                </datalist>
+              </fieldset>
+              <fieldset class="group a">
+                <legend>Audio</legend>
+                <label>Quality
+                  <select class="field" data-set="audio_quality">
+                    <option value="0">Best (VBR 0)</option>
+                    <option value="2">High (VBR 2)</option>
+                    <option value="5">Medium (VBR 5)</option>
+                    <option value="320K">320 kbps</option>
+                    <option value="256K">256 kbps</option>
+                    <option value="192K">192 kbps</option>
+                    <option value="128K">128 kbps</option>
+                  </select>
+                </label>
+                <label class="check" title="Artist, title, album from the playlist, track number from its position"><input type="checkbox" class="switch" data-set="music" data-meta>Tag as music</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="square_cover" data-meta>Square cover art</label>
+              </fieldset>
+              <fieldset class="group y">
+                <legend>Playlist and clip</legend>
+                <label class="check" title="For a link that is both a video and a playlist"><input type="checkbox" class="switch" data-set="playlist">Take the whole playlist</label>
+                <label>Only these items
+                  <input type="text" name="items" autocomplete="off" class="field mono" data-set="items" placeholder="e.g. 1-10, 15, -3:">
+                </label>
+                <label class="check"><input type="checkbox" class="switch" data-set="playlist_reverse">Oldest first</label>
+                <label>Only a section
+                  <input type="text" name="section" autocomplete="off" class="field mono" data-set="section" placeholder="e.g. 1:00-2:30">
+                </label>
+                <label class="check"><input type="checkbox" class="switch" data-set="precise_cuts" data-lossy>Precise cuts (re-encodes)</label>
+                <p class="hint" data-best-hint hidden>At best quality, cuts land on the nearest keyframe instead.</p>
+              </fieldset>
+              <fieldset class="group y">
+                <legend>Which videos</legend>
+                <label class="check"><input type="checkbox" class="switch" data-set="skip_shorts">Skip Shorts</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="skip_live">Skip livestreams</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="skip_members">Skip members-only</label>
+                <div class="pair">
+                  <label>Longer than
+                    <input type="text" name="min_duration" autocomplete="off" class="field mono" data-set="min_duration" placeholder="e.g. 1:30">
+                  </label>
+                  <label>Shorter than
+                    <input type="text" name="max_duration" autocomplete="off" class="field mono" data-set="max_duration" placeholder="e.g. 20:00">
+                  </label>
+                </div>
+                <div class="pair">
+                  <label>Uploaded after
+                    <input type="text" name="date_after" autocomplete="off" class="field mono" data-set="date_after" placeholder="e.g. 2026-01-01">
+                  </label>
+                  <label>Uploaded before
+                    <input type="text" name="date_before" autocomplete="off" class="field mono" data-set="date_before" placeholder="e.g. now-7days">
+                  </label>
+                </div>
+                <div class="pair">
+                  <label>Title has
+                    <input type="text" name="title_match" autocomplete="off" class="field mono" data-set="title_match" placeholder="e.g. review">
+                  </label>
+                  <label>Title lacks
+                    <input type="text" name="title_skip" autocomplete="off" class="field mono" data-set="title_skip" placeholder="e.g. trailer|teaser">
+                  </label>
+                </div>
+                <label>At most
+                  <input type="text" name="max_items" autocomplete="off" class="field mono" data-set="max_items" placeholder="e.g. 20">
+                </label>
+              </fieldset>
+              <fieldset class="group y">
+                <legend>Livestreams</legend>
+                <label class="check"><input type="checkbox" class="switch" data-set="live_from_start">Record from the very start</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="wait_for_live">Wait for a scheduled stream</label>
+              </fieldset>
+              <fieldset class="group y">
+                <legend>Embed and keep</legend>
+                <label class="check"><input type="checkbox" class="switch" data-set="strip_metadata">Remove metadata and source</label>
+                <p class="hint">Files keep only picture and sound: no tags, cover art, chapters, link, camera data or video ID in the name. Turn it off to choose what goes in.</p>
+                <label class="check" title="MP4 and MKV video, or any audio but WAV"><input type="checkbox" class="switch" data-set="embed_thumbnail" data-meta>Cover art</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="embed_metadata" data-meta>Title, artist and date</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="embed_chapters" data-meta>Chapters</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="split_chapters">One file per chapter</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="write_thumbnail">Thumbnail as a file</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="write_description" data-meta>Description as a file</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="write_info_json" data-meta>Full metadata (.info.json)</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="write_comments" data-meta>Comments (into the .info.json)</label>
+              </fieldset>
+              <fieldset class="group y">
+                <legend>SponsorBlock</legend>
+                <label>Sponsor segments
+                  <select class="field" data-set="sponsorblock">
+                    <option value="off">Leave them</option>
+                    <option value="mark">Mark them as chapters</option>
+                    <option value="remove">Cut them out</option>
+                  </select>
+                </label>
+                <label>Categories to cut
+                  <input type="text" name="sponsor_categories" autocomplete="off" class="field mono" data-set="sponsor_categories">
+                </label>
+              </fieldset>
+              <fieldset class="group g">
+                <legend>Galleries</legend>
+                <div class="pair">
+                  <label>Only these files
+                    <input type="text" name="range" autocomplete="off" class="field mono" data-set="range" placeholder="e.g. 1-50">
+                  </label>
+                  <label>Pixiv animations
+                    <select class="field" id="ugoira" data-set="ugoira">
+                      <option value="copy" title="The frames exactly as served, in a video file">MKV, untouched</option>
+                      <option value="off">Zip of frames</option>
+                      <option value="webm" data-lossy>WebM (lossy)</option>
+                      <option value="mp4" data-lossy>MP4 (lossy)</option>
+                      <option value="gif" data-lossy>GIF (lossy)</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Filter
+                  <input type="text" name="gallery_filter" autocomplete="off" class="field mono" data-set="gallery_filter" placeholder="e.g. width >= 1000">
+                </label>
+                <label class="check"><input type="checkbox" class="switch" data-set="write_metadata" data-meta>Metadata beside each file</label>
+                <label class="check"><input type="checkbox" class="switch" data-set="zip">A zip per gallery</label>
+                <label id="remove-text-row" hidden>Remove added text as they download
+                  <select class="field" id="remove-text" data-set="remove_text">
+                    <option value="off">Off</option>
+                    <option value="quick">Quick</option>
+                    <option value="best">Best</option>
+                  </select>
+                </label>
+                <p class="hint" id="remove-text-hint" hidden>Each original goes to the Recycle Bin.</p>
+              </fieldset>
+              <fieldset class="group">
+                <legend>Repeats</legend>
+                <label class="check" title="Remembers every download and never fetches the same thing twice"><input type="checkbox" class="switch" data-set="archive">Skip anything already downloaded</label>
+              </fieldset>
+            </div>
+          </div>
+
+          <div class="offer" id="offer" hidden>
+            <span data-i="clipboard"></span>
+            <span class="u" id="offer-url"></span>
+            <button type="button" class="btn primary small" id="offer-add">Download</button>
+            <button type="button" class="btn small" id="offer-preview">Preview</button>
+            <button type="button" class="icon-btn" id="offer-x" title="Dismiss" aria-label="Dismiss"><span data-i="x"></span></button>
+          </div>
+
+          <div class="preview" id="preview" hidden></div>
+
+          <div class="qhead" id="qhead" hidden>
+            <h2>Queue</h2>
+            <span class="sub" id="qtotal"></span>
+            <div class="right">
+              <label class="visually-hidden" for="after-all">When everything has finished</label>
+              <select class="field small" id="after-all" title="When everything has finished">
+                <option value="nothing">When done: nothing</option>
+                <option value="notify">When done: tell me</option>
+                <option value="sleep">When done: sleep</option>
+                <option value="shutdown">When done: shut down</option>
+                <option value="quit">When done: quit Keepsake</option>
+              </select>
+              <button type="button" class="btn ghost small" id="schedule-btn" title="Start the queue at a time"><span data-i="clock"></span><span class="label">Start at…</span></button>
+              <button type="button" class="btn ghost small" id="hold-btn" title="Pause queue"><span data-i="pause"></span><span class="label">Pause queue</span></button>
+              <button type="button" class="btn ghost small" data-all="retry" title="Retry failed"><span data-i="refresh"></span><span class="label">Retry failed</span></button>
+              <button type="button" class="btn ghost small" data-all="clear" title="Clear finished"><span data-i="check"></span><span class="label">Clear finished</span></button>
+              <button type="button" class="btn ghost small" data-all="cancel" title="Cancel all"><span data-i="x"></span><span class="label">Cancel all</span></button>
+            </div>
+          </div>
+          <div class="banner" id="reason" hidden>
+            <span data-i="clock"></span>
+            <span class="grow" id="reason-text"></span>
+            <button type="button" class="btn small" id="reason-go">Start now</button>
+          </div>
+          <div class="bulk" id="bulk" hidden>
+            <span class="count-label" id="bulk-count"></span>
+            <button type="button" class="btn small" data-bulk="top">Move to top</button>
+            <button type="button" class="btn small" data-bulk="bottom">Move to bottom</button>
+            <button type="button" class="btn small" data-bulk="pause">Pause</button>
+            <button type="button" class="btn small" data-bulk="retry">Start again</button>
+            <button type="button" class="btn small" data-bulk="cancel">Cancel</button>
+            <button type="button" class="btn small" data-bulk="remove">Remove from list</button>
+            <button type="button" class="btn ghost small" id="bulk-none">Clear selection</button>
+          </div>
+          <div class="cols" id="cols">
+            <span class="no">No.</span>
+            <span class="sig">Signal</span>
+            <span class="entry">Entry</span>
+            <span class="legend"><span><i class="sw c-video"></i>Video</span><span><i class="sw c-audio"></i>Audio</span><span><i class="sw c-images"></i>Pictures</span><span><i class="sw c-text"></i>Transcript</span><span><i class="sw c-wait"></i>Not known yet</span></span>
+          </div>
+          <div class="queue" id="queue"></div>
+          <div class="empty" id="empty">
+            <div class="job ghost">
+              <span></span><span class="no" id="next-no"></span><i class="code c-wait"></i>
+              <svg class="signal" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,24 120,24"/></svg>
+              <div class="body">
+                <div class="title">Paste a link to start</div>
+                <div class="item">Or drop links onto this window, <button type="button" class="inline" id="import-links">add them from a file</button>, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> in any program to fetch what you copied.</div>
+              </div>
+            </div>
+            <p class="keys-hint"><span><kbd>Enter</kbd> downloads</span><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> previews first</span><span><kbd>?</kbd> lists every shortcut</span></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEARCH -->
+      <section class="page" id="search" hidden>
+        <div class="inner">
+          <div class="head">
+            <h1>Search</h1>
+            <span class="sub" id="search-count"></span>
+          </div>
+          <form class="searchbar" id="search-form">
+            <label class="visually-hidden" for="search-q">Search for</label>
+            <input type="text" name="search-q" autocomplete="off" class="field big" id="search-q" placeholder="Search YouTube, YouTube Music or SoundCloud…" spellcheck="false">
+            <label class="visually-hidden" for="search-source">Where to search</label>
+            <select class="field tall" id="search-source">
+              <option value="youtube">YouTube</option>
+              <option value="youtube-date">YouTube, newest first</option>
+              <option value="music">YouTube Music (songs)</option>
+              <option value="soundcloud">SoundCloud</option>
+            </select>
+            <label class="visually-hidden" for="search-n">How many results</label>
+            <select class="field tall" id="search-n">
+              <option value="20">20 results</option>
+              <option value="40">40 results</option>
+              <option value="80">80 results</option>
+            </select>
+            <button type="submit" class="btn primary tall"><span data-i="search"></span>Search</button>
+          </form>
+          <div class="bulk" id="search-bulk" hidden>
+            <span class="count-label" id="search-picked"></span>
+            <button type="button" class="btn primary small" id="search-get">Download selected</button>
+            <button type="button" class="btn ghost small" id="search-all">Select all</button>
+            <button type="button" class="btn ghost small" id="search-none">Clear</button>
+          </div>
+          <div class="results" id="results"></div>
+          <div class="empty" id="search-empty">
+            <strong>Find something</strong>
+            <p>Results come with their length, channel and views. Tick several to download them together with the options on the Downloads page.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUBSCRIPTIONS -->
+      <section class="page" id="subscriptions" hidden>
+        <div class="inner">
+          <div class="head">
+            <h1>Subscriptions</h1>
+            <span class="sub" id="subs-count"></span>
+            <div class="right">
+              <button type="button" class="btn" id="subs-check"><span data-i="refresh"></span>Check all now</button>
+              <button type="button" class="btn primary" id="subs-new"><span data-i="plus"></span>Subscribe</button>
+            </div>
+          </div>
+          <form class="card form" id="sub-form" hidden>
+            <h2 id="sub-form-title">Subscribe to a channel, playlist or profile</h2>
+            <div class="form-grid">
+              <label class="wide">Link
+                <input type="text" autocomplete="off" class="field" name="url" placeholder="https://www.youtube.com/@channel/videos" spellcheck="false" required>
+              </label>
+              <label>Name
+                <input type="text" autocomplete="off" class="field" name="name" placeholder="Taken from the link…">
+              </label>
+              <label>What to download
+                <select class="field" name="mode">
+                  <option value="auto">Videos, or pictures</option>
+                  <option value="video">Videos</option>
+                  <option value="audio">Audio only</option>
+                  <option value="images">Pictures (gallery-dl)</option>
+                </select>
+              </label>
+              <label>Look every
+                <select class="field" name="every">
+                  <option value="1">hour</option>
+                  <option value="3">3 hours</option>
+                  <option value="6" selected>6 hours</option>
+                  <option value="12">12 hours</option>
+                  <option value="24">day</option>
+                  <option value="168">week</option>
+                </select>
+              </label>
+              <label>Starting with
+                <select class="field" name="start">
+                  <option value="new">Only what appears from today</option>
+                  <option value="all">Everything already there (the newest 50)</option>
+                </select>
+              </label>
+              <label>Quality
+                <select class="field" name="quality">
+                  <option value="">As on the Downloads page</option>
+                  <option value="best">Best</option>
+                  <option value="1080">1080p</option>
+                  <option value="720">720p</option>
+                </select>
+              </label>
+              <label>Longer than
+                <input type="text" autocomplete="off" class="field mono" name="min_duration" placeholder="e.g. 1:30">
+              </label>
+              <label>Title has
+                <input type="text" autocomplete="off" class="field mono" name="title_match" placeholder="e.g. review">
+              </label>
+              <label>Title lacks
+                <input type="text" autocomplete="off" class="field mono" name="title_skip" placeholder="e.g. trailer|teaser">
+              </label>
+              <div class="checks wide">
+                <label class="check"><input type="checkbox" class="switch" name="skip_shorts" checked>Skip Shorts</label>
+                <label class="check"><input type="checkbox" class="switch" name="skip_live">Skip livestreams</label>
+                <label class="check"><input type="checkbox" class="switch" name="skip_members" checked>Skip members-only</label>
+                <label class="check"><input type="checkbox" class="switch" name="sponsorblock">Cut sponsor segments</label>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn primary" id="sub-save">Subscribe</button>
+              <button type="button" class="btn ghost" id="sub-cancel">Cancel</button>
+            </div>
+          </form>
+          <p class="hint" id="subs-hint">Keepsake checks while it is running. Turn on <em>Keep running in the tray</em> and <em>Start with Windows</em> in Settings so nothing new is missed.</p>
+          <div class="subs" id="subs"></div>
+          <div class="empty" id="subs-empty">
+            <strong>Nothing subscribed</strong>
+            <p>Subscribe to a channel, playlist or profile and Keepsake fetches what is new on a schedule, skipping what it already has. Checks stop at the first known video, so even a huge channel costs a moment.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIBRARY -->
+      <section class="page" id="library" hidden>
+        <div class="inner">
+          <div class="head">
+            <h1>Library</h1>
+            <span class="sub" id="libcount"></span>
+            <div class="right">
+              <button type="button" class="btn" id="lib-select" aria-pressed="false" title="Pick several files (or Ctrl+click one)"><span data-i="check"></span><span class="label">Select</span></button>
+              <button type="button" class="btn" id="lib-folder" title="Open folder"><span data-i="folder"></span><span class="label">Open folder</span></button>
+              <button type="button" class="btn" id="lib-refresh" title="Refresh"><span data-i="refresh"></span><span class="label">Refresh</span></button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <div class="seg" id="libfilter" role="group" aria-label="Show">
+              <button type="button" data-v="all" class="on">All</button>
+              <button type="button" data-v="video">Video</button>
+              <button type="button" data-v="image">Images</button>
+              <button type="button" data-v="audio">Audio</button>
+            </div>
+            <div class="search">
+              <span data-i="search"></span>
+              <label class="visually-hidden" for="libq">Search file names</label>
+              <input type="text" name="libq" autocomplete="off" class="field" id="libq" placeholder="Search file names…" spellcheck="false">
+            </div>
+            <label class="visually-hidden" for="libsort">Order</label>
+            <select class="field" id="libsort">
+              <option value="new">Newest first</option>
+              <option value="old">Oldest first</option>
+              <option value="name">By name</option>
+              <option value="size">Largest first</option>
+            </select>
+          </div>
+          <div class="grid" id="grid"></div>
+          <div class="bulk" id="lib-bulk" hidden>
+            <span class="count-label" id="lib-bulk-count"></span>
+            <button type="button" class="btn small" id="lib-all">Select All Shown</button>
+            <button type="button" class="btn ghost small" id="lib-none">Clear Selection</button>
+            <span class="grow"></span>
+            <button type="button" class="btn small" id="lib-detext" hidden title="Save a copy of each picked picture with its captions, stickers and watermarks taken off"><span data-i="eraser"></span><span class="label">Remove Added Text</span></button>
+            <button type="button" class="btn small" id="lib-delete"><span data-i="trash"></span><span class="label">Move to Recycle Bin</span></button>
+          </div>
+          <div class="empty" id="libempty" hidden>
+            <strong>Nothing here yet</strong>
+            <p>Everything in your download folder shows up here.</p>
+          </div>
+          <div class="more"><button type="button" class="btn" id="libmore" hidden>Show more</button></div>
+        </div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="page" id="history" hidden>
+        <div class="inner">
+          <div class="head">
+            <h1>History</h1>
+            <span class="sub" id="histcount"></span>
+            <div class="right">
+              <div class="search">
+                <span data-i="search"></span>
+                <label class="visually-hidden" for="histq">Search titles and links</label>
+                <input type="text" name="histq" autocomplete="off" class="field" id="histq" placeholder="Search titles and links…" spellcheck="false">
+              </div>
+              <button type="button" class="btn ghost" id="hist-export"><span data-i="file"></span>Export</button>
+              <button type="button" class="btn ghost" id="hist-clear"><span data-i="trash"></span><span class="label">Clear</span></button>
+            </div>
+          </div>
+          <div class="stats" id="stats"></div>
+          <div class="hist" id="hist"></div>
+          <div class="empty" id="histempty" hidden>
+            <strong>No history</strong>
+            <p>Finished and failed downloads are listed here.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="settings" hidden>
+        <div class="inner settings">
+          <div class="head">
+            <h1>Settings</h1>
+            <span class="sub">Saved as you change them</span>
+          </div>
+          <div class="jump" id="settings-index" role="group" aria-label="Sections"></div>
+
+          <section class="sheet">
+            <h2>Saving</h2>
+            <div class="setting"><div><div class="l">Videos</div><div class="h" data-folder-show="folder"></div></div>
+              <div class="c"><button type="button" class="btn" data-pick="folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="videos">Open</button></div></div>
+            <div class="setting"><div><div class="l">Music</div><div class="h" data-folder-show="audio_folder"></div></div>
+              <div class="c"><button type="button" class="btn" data-pick="audio_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="music">Open</button></div></div>
+            <div class="setting"><div><div class="l">Pictures and galleries</div><div class="h" data-folder-show="picture_folder"></div></div>
+              <div class="c"><button type="button" class="btn" data-pick="picture_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="pictures">Open</button></div></div>
+            <div class="setting"><div><div class="l">Transcripts</div><div class="h" data-folder-show="text_folder"></div></div>
+              <div class="c"><button type="button" class="btn" data-pick="text_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="documents">Open</button></div></div>
+            <div class="setting"><div><div class="l">Sort into folders by site</div><div class="h">Off: videos sit loose and each gallery gets one folder, named from its link. On: a folder per site, and gallery-dl's own folders by account.</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="by_site" aria-label="Sort into folders by site"></div></div>
+            <div class="setting"><div><div class="l">File names</div><div class="h">A yt-dlp output template. Pick one or write your own.</div></div>
+              <div class="c">
+                <label class="visually-hidden" for="template-preset">File name pattern</label>
+                <select class="field" id="template-preset">
+                  <option value="%(title).180B [%(id)s].%(ext)s">Title [id]</option>
+                  <option value="%(title).200B.%(ext)s">Title</option>
+                  <option value="%(uploader|Unknown)s/%(title).180B [%(id)s].%(ext)s">Channel / Title [id]</option>
+                  <option value="%(playlist_title,playlist|Singles)s/%(playlist_index&amp;{} - |)s%(title).160B.%(ext)s">Playlist / 01 - Title</option>
+                  <option value="%(upload_date>%Y-%m-%d|undated)s %(title).170B [%(id)s].%(ext)s">Date Title [id]</option>
+                  <option value="">Custom</option>
+                </select>
+              </div>
+              <div class="c span"><label class="visually-hidden" for="template">Template</label><input type="text" name="template" autocomplete="off" class="field mono" id="template" data-set="template" spellcheck="false"></div></div>
+            <div class="setting"><div><div class="l">File date</div><div class="h">What Explorer shows as the modified date</div></div>
+              <div class="c"><label class="visually-hidden" for="file-date">File date</label><select class="field" id="file-date" data-set="file_date"><option value="download">When downloaded</option><option value="upload">When uploaded</option></select></div></div>
+            <div class="setting"><div><div class="l">Longest file name</div><div class="h">Characters. Windows breaks past 260 for a whole path.</div></div>
+              <div class="c"><label class="visually-hidden" for="trim">Longest file name</label><select class="field narrow" id="trim" data-set="trim_names"><option>100</option><option>150</option><option>200</option></select></div></div>
+            <div class="setting"><div><div class="l">Plain ASCII file names</div><div class="h">No spaces, accents or emoji, for older players and servers</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="restrict_names" aria-label="Plain ASCII file names"></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Sign-in</h2>
+            <div class="setting"><div><div class="l">Sign in to a site from Keepsake</div><div class="h">Opens the site in its own window. Sign in as usual and close it: downloads from that site then use the session. This works where borrowing Chrome's or Edge's cookies does not.</div></div>
+              <div class="c">
+                <label class="visually-hidden" for="signin-site">Site</label>
+                <input type="text" name="signin-site" autocomplete="off" class="field" id="signin-site" placeholder="e.g. youtube.com" spellcheck="false">
+                <button type="button" class="btn primary" id="signin-go">Sign in</button>
+              </div></div>
+            <div class="setting wide"><div class="c chips" id="signin-quick"></div></div>
+            <div class="setting wide" id="accounts-row"><div class="accounts" id="accounts"></div></div>
+            <div class="setting"><div><div class="l">Otherwise</div><div class="h">Automatic uses a Keepsake sign-in for that site, then tries each browser, but only when a site asks.</div></div>
+              <div class="c"><label class="visually-hidden" for="cookies">Cookies</label><select class="field" id="cookies" data-set="cookies"></select></div></div>
+            <div class="setting" id="cookie-file-row"><div><div class="l">cookies.txt</div><div class="h" id="cookie-file-show">None chosen</div></div>
+              <div class="c"><button type="button" class="btn" id="pick-cookies"><span data-i="file"></span>Choose file</button></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Browser</h2>
+            <div class="setting"><div><div class="l">Send pages to Keepsake</div><div class="h">Drag these to the bookmarks bar. Clicking one on a page downloads it; the browser asks once whether to open Keepsake.</div></div>
+              <div class="c"><a class="bookmarklet" id="bm-video" href="#">Keepsake</a><a class="bookmarklet" id="bm-audio" href="#">Keepsake audio</a></div></div>
+            <div class="setting"><div><div class="l">Download the copied link with <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></div><div class="h">Works in any program, even with Keepsake in the tray</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="hotkey" aria-label="Global hotkey"></div></div>
+            <div class="setting"><div><div class="l">Watch the clipboard</div><div class="h">Notice links you copy anywhere</div></div>
+              <div class="c"><label class="visually-hidden" for="clipboard">Clipboard</label><select class="field" id="clipboard" data-set="clipboard"><option value="off">Off</option><option value="ask">Offer to download</option><option value="auto">Download straight away</option></select></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Network and queue</h2>
+            <div class="setting"><div><div class="l">Downloads at once</div></div>
+              <div class="c"><label class="visually-hidden" for="concurrency">Downloads at once</label><select class="field narrow" id="concurrency" data-set="concurrency"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option></select></div></div>
+            <div class="setting"><div><div class="l">Download hours</div><div class="h">New downloads only start between these times. Empty for any time.</div></div>
+              <div class="c"><label class="visually-hidden" for="hours-from">From</label><input type="text" name="hours_from" autocomplete="off" class="field mono narrow" id="hours-from" data-set="hours_from" placeholder="e.g. 01:00"><span class="dim">to</span><label class="visually-hidden" for="hours-to">To</label><input type="text" name="hours_to" autocomplete="off" class="field mono narrow" id="hours-to" data-set="hours_to" placeholder="e.g. 07:00"></div></div>
+            <div class="setting"><div><div class="l">Speed limit</div><div class="h">Per download, e.g. 5M or 800K. Empty for none.</div></div>
+              <div class="c"><label class="visually-hidden" for="rate">Speed limit</label><input type="text" name="rate" autocomplete="off" class="field mono narrow" id="rate" data-set="rate" placeholder="e.g. 5M"></div></div>
+            <div class="setting"><div><div class="l">Pace</div><div class="h">Pauses between requests keep a site from rate-limiting you. Careful is slow but survives long channels.</div></div>
+              <div class="c"><label class="visually-hidden" for="politeness">Pace</label><select class="field" id="politeness" data-set="politeness"><option value="off">As fast as possible</option><option value="normal">Normal</option><option value="careful">Careful</option></select></div></div>
+            <div class="setting"><div><div class="l">Retry flaky failures by themselves</div><div class="h">After 30 seconds, 2 minutes and 10 minutes, for dropped connections and rate limits</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="auto_retry" aria-label="Retry by themselves"></div></div>
+            <div class="setting"><div><div class="l">Pretend to be a browser</div><div class="h">For sites behind Cloudflare that turn yt-dlp away</div></div>
+              <div class="c"><label class="visually-hidden" for="impersonate">Impersonate</label><select class="field" id="impersonate" data-set="impersonate"><option value="">No</option><option value="chrome">Chrome</option><option value="edge">Edge</option><option value="firefox">Firefox</option><option value="safari">Safari</option></select></div></div>
+            <div class="setting"><div><div class="l">Parallel fragments</div><div class="h">For HLS and DASH streams</div></div>
+              <div class="c"><label class="visually-hidden" for="fragments">Fragments</label><select class="field narrow" id="fragments" data-set="fragments"><option>1</option><option>2</option><option>4</option><option>8</option><option>16</option></select></div></div>
+            <div class="setting"><div><div class="l">Retries</div></div>
+              <div class="c"><label class="visually-hidden" for="retries">Retries</label><select class="field narrow" id="retries" data-set="retries"><option>3</option><option>10</option><option>20</option><option>50</option></select></div></div>
+            <div class="setting"><div><div class="l">Pause below</div><div class="h">Stop starting downloads when the drive has less free space than this</div></div>
+              <div class="c"><label class="visually-hidden" for="min-free">Free space</label><select class="field narrow" id="min-free" data-set="min_free_gb"><option value="0">Never</option><option value="1">1 GB</option><option value="2">2 GB</option><option value="5">5 GB</option><option value="20">20 GB</option></select></div></div>
+            <div class="setting"><div><div class="l">Proxy</div><div class="h">http://, https:// or socks5://</div></div>
+              <div class="c"><label class="visually-hidden" for="proxy">Proxy</label><input type="text" name="proxy" autocomplete="off" class="field mono" id="proxy" data-set="proxy" placeholder="e.g. socks5://127.0.0.1:1080" spellcheck="false"></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>After a download</h2>
+            <div class="setting"><div><div class="l">Then</div></div>
+              <div class="c"><label class="visually-hidden" for="after">After a download</label><select class="field" id="after" data-set="after"><option value="nothing">Nothing</option><option value="open">Open the file</option><option value="reveal">Show it in Explorer</option><option value="copy">Copy its path</option></select></div></div>
+            <div class="setting wide"><div><div class="l">Run a command on each file</div><div class="h"><code>{file}</code> stands for the file's path</div></div>
+              <div class="c"><label class="visually-hidden" for="run-after">Command</label><input type="text" name="run_after" autocomplete="off" class="field mono" id="run-after" data-set="run_after" placeholder="e.g. copy {file} D:\Backup" spellcheck="false"></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Behaviour</h2>
+            <div class="setting"><div><div class="l">Keep running in the tray when closed</div><div class="h">Downloads and subscriptions carry on; quit from the tray icon</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="close_to_tray" aria-label="Keep running in the tray"></div></div>
+            <div class="setting"><div><div class="l">Start with Windows</div><div class="h">Quietly, in the tray</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="autostart" aria-label="Start with Windows"></div></div>
+            <div class="setting"><div><div class="l">Notifications</div><div class="h">When a download finishes or fails while you are elsewhere</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="notify" aria-label="Notifications"></div></div>
+            <div class="setting"><div><div class="l">A sound when a download finishes</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="sound" aria-label="Sound"></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Tools and updates</h2>
+            <div class="setting"><div><div class="l">yt-dlp channel</div><div class="h">Nightly gets site fixes days before stable, which matters on the days YouTube changes something.</div></div>
+              <div class="c"><label class="visually-hidden" for="channel">Channel</label><select class="field" id="channel" data-set="ytdlp_channel"><option value="stable">Stable</option><option value="nightly">Nightly</option></select><button type="button" class="btn" id="update-now"><span data-i="refresh"></span>Update now</button></div></div>
+            <div class="setting"><div><div class="l">Go back to an earlier yt-dlp</div><div class="h">For the rare update that breaks something</div></div>
+              <div class="c"><label class="visually-hidden" for="rollback">Version</label><select class="field" id="rollback"></select><button type="button" class="btn" id="rollback-go">Install</button></div></div>
+            <div class="setting"><div><div class="l">Update yt-dlp and gallery-dl weekly</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="auto_update" aria-label="Weekly updates"></div></div>
+            <div class="setting"><div><div class="l">yt-dlp plugins</div><div class="h">Anything in this folder is loaded, such as a PO token provider</div></div>
+              <div class="c"><button type="button" class="btn" data-open="plugins"><span data-i="folder"></span>Open plugins folder</button></div></div>
+            <div class="setting" id="text-removal"><div><div class="l">Remove added text</div><div class="h" id="detext-about"></div></div>
+              <div class="c"><button type="button" class="btn" id="detext-quick" hidden>Set Up Quick</button><button type="button" class="btn" id="detext-best" hidden>Set Up Best</button><button type="button" class="btn ghost" id="detext-forget" hidden>Remove It</button></div></div>
+            <div class="setting"><div><div class="l">Keepsake <span class="mono" id="app-version"></span></div><div class="h" id="app-state"></div></div>
+              <div class="c"><button type="button" class="btn primary" id="app-restart-2" hidden>Restart to update</button><button type="button" class="btn" id="app-check">Check now</button></div></div>
+            <ul class="notes" id="app-notes" hidden></ul>
+            <div class="setting"><div><div class="l">Update Keepsake by itself</div><div class="h">Moves to each tested release; a restart finishes it</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="self_update" aria-label="Update Keepsake by itself"></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Presets and backup</h2>
+            <div class="setting wide"><div class="chips" id="preset-list"></div></div>
+            <div class="setting"><div><div class="l">Settings, presets and subscriptions</div><div class="h">One file, to move to another machine or keep safe</div></div>
+              <div class="c"><button type="button" class="btn" id="export-settings">Export</button><button type="button" class="btn" id="import-settings">Import</button></div></div>
+          </section>
+
+          <section class="sheet">
+            <h2>Archives</h2>
+            <div class="setting wide"><div class="h">What each archive remembers is never downloaded again. Forget entries here to fetch them once more.</div></div>
+            <div class="setting wide"><div class="archives" id="archives"></div></div>
+            <div class="archive-view" id="archive-view" hidden>
+              <div class="toolbar">
+                <strong id="archive-name"></strong>
+                <div class="search"><span data-i="search"></span><label class="visually-hidden" for="archive-q">Search entries</label><input type="text" name="archive-q" autocomplete="off" class="field" id="archive-q" placeholder="Search entries…"></div>
+                <button type="button" class="btn" id="archive-forget">Forget selected</button>
+                <button type="button" class="btn ghost" id="archive-close">Close</button>
+              </div>
+              <div class="entries" id="archive-entries"></div>
+            </div>
+          </section>
+
+          <section class="sheet">
+            <h2>Advanced</h2>
+            <div class="setting wide"><div><div class="l">Extra yt-dlp arguments</div><div class="h">Added to every video and audio download</div></div>
+              <div class="c"><label class="visually-hidden" for="ytdlp-args">Extra yt-dlp arguments</label><input type="text" name="ytdlp_args" autocomplete="off" class="field mono" id="ytdlp-args" data-set="ytdlp_args" spellcheck="false" placeholder="e.g. --geo-bypass"></div></div>
+            <div class="setting wide"><div><div class="l">Extra gallery-dl arguments</div><div class="h">Added to every gallery download</div></div>
+              <div class="c"><label class="visually-hidden" for="gdl-args">Extra gallery-dl arguments</label><input type="text" name="gdl_args" autocomplete="off" class="field mono" id="gdl-args" data-set="gdl_args" spellcheck="false" placeholder="e.g. -o extractor.twitter.videos=false"></div></div>
+            <div class="setting"><div><div class="l">Settings, history and archives</div><div class="h mono" id="data-show"></div></div>
+              <div class="c"><button type="button" class="btn ghost" data-open="data">Open</button><button type="button" class="btn" id="reset">Reset settings</button></div></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div id="lightbox" hidden>
+      <header>
+        <button type="button" class="btn ghost back" id="lb-close" title="Back to the library (Esc)"><span data-i="left"></span><span class="label">Library</span></button>
+        <span class="lb-no" id="lb-no"></span>
+        <i class="code" id="lb-code"></i>
+        <div class="who">
+          <div class="nm" id="lb-name"></div>
+          <div class="mt" id="lb-meta"></div>
+        </div>
+        <div class="acts">
+          <button type="button" class="btn ghost" id="lb-open" title="Open"><span data-i="external"></span><span class="label">Open</span></button>
+          <button type="button" class="btn ghost" id="lb-reveal" title="Show in folder"><span data-i="folder"></span><span class="label">Show in folder</span></button>
+          <button type="button" class="btn ghost" id="lb-copy" title="Copy path"><span data-i="copy"></span><span class="label">Copy path</span></button>
+          <button type="button" class="btn ghost" id="lb-after" hidden title="Open in Afterimage"><span data-i="aperture"></span><span class="label">Afterimage</span></button>
+          <button type="button" class="btn ghost" id="lb-detext" hidden title="Save a copy with the captions, stickers and watermarks taken off (T)"><span data-i="eraser"></span><span class="label">Remove Added Text</span></button>
+          <button type="button" class="btn ghost" id="lb-playable" data-convert="compatible" hidden title="A copy in H.264 and AAC in an MP4, which every player and phone plays. Made on the graphics card when there is one."><span data-i="film"></span><span class="label">Make a Playable Copy</span></button>
+          <button type="button" class="btn ghost danger" id="lb-delete" title="Move to the Recycle Bin"><span data-i="trash"></span><span class="label">Delete</span></button>
+        </div>
+      </header>
+      <div class="stage" id="lb-stage"></div>
+      <footer class="tools-bar" id="lb-tools" aria-label="Clip and saves" hidden>
+        <div class="saves">
+          <button type="button" class="btn small" id="lb-frame" title="Save the frame on screen as a PNG beside the video (S)">Save Frame</button>
+          <div class="split" id="lb-clip">
+            <button type="button" class="btn small" data-convert="trim">Save Clip</button>
+            <button type="button" class="btn small opener" aria-haspopup="menu" aria-expanded="false" aria-controls="lb-cuts" title="Quick or exact" aria-label="Quick or exact clip"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14.5 12 8.5l6 6"/></svg></button>
+            <div class="drop-up" id="lb-cuts" role="menu" aria-label="Cut the clip">
+              <button type="button" role="menuitem" tabindex="-1" data-pick="trim" title="Cuts at the keyframes nearest the marks, in a second, without re-encoding">Quick</button>
+              <button type="button" role="menuitem" tabindex="-1" data-pick="exact" title="Cuts exactly at the marks and re-encodes, so it takes longer">Exact</button>
+            </div>
+          </div>
+          <button type="button" class="btn small" data-convert="gif" title="A looping GIF of the clip, or of the whole video">Make GIF</button>
+          <div class="split" id="lb-sound">
+            <button type="button" class="btn small" data-convert="mp3">Save as MP3</button>
+            <button type="button" class="btn small opener" aria-haspopup="menu" aria-expanded="false" aria-controls="lb-formats" title="Other formats" aria-label="Other formats"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14.5 12 8.5l6 6"/></svg></button>
+            <div class="drop-up" id="lb-formats" role="menu" aria-label="Save the sound as">
+              <button type="button" role="menuitem" tabindex="-1" data-pick="mp3">MP3</button>
+              <button type="button" role="menuitem" tabindex="-1" data-pick="m4a">M4A</button>
+              <button type="button" role="menuitem" tabindex="-1" data-pick="opus">Opus</button>
+              <button type="button" role="menuitem" tabindex="-1" data-pick="flac">FLAC</button>
+              <button type="button" role="menuitem" tabindex="-1" data-pick="wav">WAV</button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <dialog id="help" aria-labelledby="help-title">
+      <h2 class="dialog-title" id="help-title">Keyboard</h2>
+      <div class="help-cols">
+      <section>
+      <h3 class="keys-head">Anywhere</h3>
+      <dl class="keys">
+        <dt><kbd>Enter</kbd></dt><dd>Download what is in the box</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>Enter</kbd></dt><dd>Preview it first</dd>
+        <dt><kbd>Shift</kbd>+<kbd>Enter</kbd></dt><dd>Another line</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>V</kbd></dt><dd>Paste links from anywhere in the window</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></dt><dd>Download the copied link, from any program</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>1</kbd> to <kbd>6</kbd></dt><dd>Switch pages</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>F</kbd></dt><dd>Search</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>O</kbd></dt><dd>Show the latest download in its folder</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>A</kbd></dt><dd>Select every download in the queue</dd>
+        <dt><kbd>?</kbd></dt><dd>This list</dd>
+      </dl>
+      </section>
+      <section>
+      <h3 class="keys-head">In the viewer</h3>
+      <dl class="keys">
+        <dt><kbd>Esc</kbd></dt><dd>Back to the library</dd>
+        <dt><kbd>Space</kbd> <kbd>K</kbd></dt><dd>Play or pause</dd>
+        <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward 5 seconds; for pictures, the previous or next one</dd>
+        <dt><kbd>J</kbd> <kbd>L</kbd></dt><dd>Back or forward 10 seconds</dd>
+        <dt><kbd>,</kbd> <kbd>.</kbd></dt><dd>One frame back or forward</dd>
+        <dt><kbd>&lt;</kbd> <kbd>&gt;</kbd></dt><dd>Slower or faster</dd>
+        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Louder or quieter; <kbd>M</kbd> mutes</dd>
+        <dt><kbd>0</kbd> to <kbd>9</kbd></dt><dd>Jump to that tenth of the way through</dd>
+        <dt><kbd>F</kbd> <kbd>P</kbd></dt><dd>Full screen (or double-click), picture in picture</dd>
+        <dt><kbd>C</kbd> <kbd>R</kbd></dt><dd>Subtitles, loop (the marked part if there is one)</dd>
+        <dt><kbd>I</kbd> <kbd>O</kbd></dt><dd>Mark a clip's start and end</dd>
+        <dt><kbd>S</kbd></dt><dd>Save the frame as a picture</dd>
+        <dt><kbd>T</kbd></dt><dd>Save a copy of a picture without its added text, once that is set up</dd>
+        <dt><kbd>Page Up</kbd> <kbd>Page Down</kbd></dt><dd>The previous or next file (or <kbd>Shift</kbd> with an arrow)</dd>
+        <dt><kbd>Delete</kbd></dt><dd>Move the file to the Recycle Bin</dd>
+      </dl>
+      </section>
+      </div>
+      <form method="dialog"><button type="submit" class="btn">Close</button></form>
+    </dialog>
+
+    <dialog id="ask" aria-labelledby="ask-title">
+      <form method="dialog" id="ask-form">
+        <h2 class="dialog-title" id="ask-title">Question</h2>
+        <label class="visually-hidden" for="ask-input">Answer</label>
+        <input type="text" name="ask-input" autocomplete="off" class="field full" id="ask-input" spellcheck="false">
+        <div class="actions">
+          <button type="submit" class="btn primary" value="ok">OK</button>
+          <button type="submit" class="btn ghost" value="cancel" formnovalidate>Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

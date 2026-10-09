@@ -1,0 +1,22 @@
+# typos: spell check for code and prose. Domain vocabulary goes here, never as
+# an inline allow comment.
+[files]
+extend-exclude = ["package-lock.json", "*.ico", "*.onnx"]
+
+[default.extend-words]
+# yt-dlp's name for a Pixiv animation, and a flag of gallery-dl's.
+ugoira = "ugoira"
+Ugoira = "Ugoira"
+# FFmpeg's names.
+mjpeg = "mjpeg"
+nvenc = "nvenc"
+lavfi = "lavfi"
+# Windows' shell file-operation constants: FO_DELETE, FOF_SILENT and the rest.
+FO = "FO"
+FOF = "FOF"
+# yt-dlp's selector for the best audio stream, as in bv*+ba/b.
+ba = "ba"
+# The media element event that fires when a seek finishes.
+seeked = "seeked"
+# OpenType's tag for a font's width axis, in a font's licence.
+wdth = "wdth"

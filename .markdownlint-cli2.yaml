@@ -1,0 +1,21 @@
+---
+# markdownlint: every rule on except the ones below, each with its reason.
+config:
+  default: true
+  # Prose reflows badly under a hard wrap and every renderer soft-wraps.
+  MD013: false
+  # Table pipe padding is invisible when rendered; enforcing it makes large
+  # diffs that change nothing a reader sees.
+  MD060: false
+  MD049: {style: asterisk}
+  MD050: {style: asterisk}
+  MD046: {style: fenced}
+  # Keyboard keys are shown as keys; no other inline HTML.
+  MD033: {allowed_elements: [kbd]}
+  MD024: {siblings_only: true}
+globs:
+  - "**/*.md"
+ignores:
+  - "**/node_modules/**"
+  - build/**
+  - dist/**

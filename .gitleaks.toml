@@ -1,0 +1,12 @@
+# Extends gitleaks' default rules; this file only narrows where they look.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Installed dependencies are not this repository's source"
+paths = [
+  '''node_modules/''',
+  '''package-lock\.json$''',
+  '''^build/''',
+  '''^dist/''',
+]

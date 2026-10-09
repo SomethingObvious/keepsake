@@ -1,0 +1,6 @@
+#!/bin/sh
+# One squashed commit that raises the version, and every check.
+root="$(git rev-parse --show-toplevel)"
+refs="$(cat)"
+printf '%s\n' "$refs" | python "$root/scripts/push_rules.py" || exit 1
+exec python "$root/scripts/lint.py"

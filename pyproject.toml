@@ -1,0 +1,101 @@
+# Every Python check lives here, at the root: a config in a subdirectory is a
+# suppression nobody can see, and scripts/lint.py rejects one. Inline
+# suppressions of any tool are rejected outright too, so an exception to a
+# rule is argued here, with its reason, or not at all.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["node_modules", "build", "dist"]
+
+[tool.ruff.lint]
+# Every rule ruff has. Hand-picking families is how a rule that would have
+# caught something never gets to run. Preview rules stay off: they change
+# between releases, and a suite that moves under an upgrade is one people
+# learn to bypass.
+select = ["ALL"]
+ignore = [
+  # The formatter owns these, and ruff's own documentation says not to run
+  # them alongside `ruff format`, which fights them line by line.
+  "COM812",
+  "ISC001",
+  # pydocstyle ships both halves of two contradictory pairs. One of each has
+  # to go: no blank line before a class docstring (D211 kept), and the summary
+  # on the first line (D212 kept).
+  "D203",
+  "D213",
+  # Running programs is this application's job. Every call passes an argument
+  # list, never a shell string, and S603 fires on every such call regardless
+  # of where its arguments came from, so it distinguishes nothing.
+  "S603",
+  # LICENSE at the root covers every file, so a copyright line atop each
+  # one would only repeat it.
+  "CPY001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest's assert is the test; comparing against literal expected values is
+# the point of a test, not a magic number.
+"tests/**" = ["S101", "PLR2004"]
+# The best tier's painter needs PyTorch, and only the best tier installs it:
+# the quick tier's environment has none, so it is imported where the painter
+# is made, never at the top.
+"detext/klein.py" = ["PLC0415"]
+# The worker cleans pictures one after another: whatever one picture throws
+# (a codec, a model, the graphics card), it is reported for that picture and
+# the rest still get done, so the catch is deliberately every exception.
+"detext/__main__.py" = ["PLC0415", "BLE001"]
+# Every URL the setup opens is a pinned https constant written in that file.
+"keepsake/textremoval.py" = ["S310"]
+# These open https constants written in the file, or the download links GitHub's
+# releases API gives for Keepsake's own releases.
+"keepsake/tools.py" = ["S310"]
+"scripts/build.py" = ["S310"]
+"keepsake/updates.py" = ["S310"]
+# A stub has to use its library's own names, lower-case classes and all.
+"typings/**" = ["N801"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.12"
+files = ["keepsake", "detext", "tests", "scripts"]
+mypy_path = "typings"
+strict = true
+warn_unreachable = true
+disallow_any_unimported = true
+enable_error_code = [
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+  "truthy-iterable",
+  "possibly-undefined",
+  "redundant-self",
+  "unused-awaitable",
+  "explicit-override",
+  "mutable-override",
+  "unimported-reveal",
+  "deprecated",
+  "exhaustive-match",
+]
+
+[tool.basedpyright]
+pythonVersion = "3.12"
+include = ["keepsake", "detext", "tests", "scripts"]
+stubPath = "typings"
+typeCheckingMode = "strict"
+# detext runs in an environment of its own, and a few of its libraries (torch,
+# diffusers, transformers, rapidocr) are not installed where the checks run:
+# typings/ holds stubs of what it calls, so the calls are checked, and there is
+# no source here for the stubs to sit beside.
+reportMissingModuleSource = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+xfail_strict = true
+filterwarnings = ["error"]
