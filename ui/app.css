@@ -1389,7 +1389,16 @@
     font-size: 12px;
   }
 
+  /* The folder and its Change button share a line, and the path gives way first. */
+  .fine .c {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+  }
+
   .fine .path {
+    min-width: 0;
     max-width: 100%;
   }
 
@@ -2612,6 +2621,11 @@
 
   .setting.wide .c {
     justify-content: stretch;
+  }
+
+  /* Two buttons with whole words in them, which the usual control column cannot hold. */
+  .setting.roomy {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .chips {

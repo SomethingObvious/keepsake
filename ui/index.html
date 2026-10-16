@@ -84,6 +84,7 @@
               <div class="go">
                 <button type="button" class="btn ghost" id="toggle-options" aria-expanded="false" aria-controls="drawer"><span data-i="sliders"></span>Options<span class="badge" id="optcount" hidden></span></button>
                 <button type="button" class="btn ghost" id="preview-btn"><span data-i="eye"></span>Preview</button>
+                <button type="button" class="btn ghost" id="clip-btn" title="Preview the link with its clip bar ready, to download only part of it"><span data-i="scissors"></span>Clip</button>
                 <button type="button" class="btn primary" id="download-btn"><span data-i="download"></span>Download</button>
               </div>
             </div>
@@ -555,6 +556,8 @@
               <div class="c"><button type="button" class="btn" data-pick="picture_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="pictures">Open</button></div></div>
             <div class="setting"><div><div class="l">Transcripts</div><div class="h" data-folder-show="text_folder"></div></div>
               <div class="c"><button type="button" class="btn" data-pick="text_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="documents">Open</button></div></div>
+            <div class="setting roomy"><div><div class="l">All in one place</div><div class="h">Send every kind of download to a Keepsake folder in Downloads, or back to the four folders above</div></div>
+              <div class="c"><button type="button" class="btn" data-folders="downloads"><span data-i="download"></span>Use Downloads</button><button type="button" class="btn ghost" data-folders="own">Use Windows' Folders</button></div></div>
             <div class="setting"><div><div class="l">Sort into folders by site</div><div class="h">Off: videos sit loose and each gallery gets one folder, named from its link. On: a folder per site, and gallery-dl's own folders by account.</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="by_site" aria-label="Sort into folders by site"></div></div>
             <div class="setting"><div><div class="l">File names</div><div class="h">A yt-dlp output template. Pick one or write your own.</div></div>
@@ -646,6 +649,8 @@
               <div class="c"><input type="checkbox" class="switch" data-set="notify" aria-label="Notifications"></div></div>
             <div class="setting"><div><div class="l">A sound when a download finishes</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="sound" aria-label="Sound"></div></div>
+            <div class="setting"><div><div class="l">Preview playback</div><div class="h">How big a video a link's preview plays. A slow computer plays a smaller one smoothly, or the sound alone. The clip bar works with any of them, even off.</div></div>
+              <div class="c"><label class="visually-hidden" for="preview-playback">Preview playback</label><select class="field" id="preview-playback" data-set="preview_playback"><option value="360">360p</option><option value="240">240p</option><option value="144">144p</option><option value="sound">Sound only</option><option value="off">Off</option></select></div></div>
           </section>
 
           <section class="sheet">

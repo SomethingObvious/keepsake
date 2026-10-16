@@ -68,6 +68,7 @@ interface Settings {
   zip: boolean;
   ugoira: string;
   remove_text: string;
+  preview_playback: string;
   cookies: string;
   cookie_file: string;
   proxy: string;
@@ -372,7 +373,9 @@ interface KeepsakeApi {
   forget_text_removal(): Promise<TextRemoval>;
   remove_text(paths: string[]): Promise<string>;
   open_path(path: string): Promise<null>;
-  reveal(path: string): Promise<null>;
+  reveal(path: string): Promise<"shown" | "folder" | "gone">;
+  open_directory(path: string): Promise<boolean>;
+  use_folders(which: string): Promise<Settings>;
   copy_path(path: string): Promise<boolean>;
   delete(path: string): Promise<boolean>;
   afterimage(path: string): Promise<null>;
@@ -382,7 +385,7 @@ interface KeepsakeApi {
   waveform(path: string): Promise<string>;
   thumbnail(path: string): Promise<string>;
   open_url(url: string): Promise<null>;
-  pick_folder(): Promise<string | null>;
+  pick_folder(start: string): Promise<string | null>;
   pick_file(purpose: string): Promise<string | null>;
   read_links(path: string): Promise<string>;
   history(): Promise<HistoryData>;
