@@ -345,7 +345,9 @@ class App:
     def open_folder(self) -> None:
         """Show the latest download in its folder, or open the videos folder before the first."""
         latest = self.latest_file()
-        if latest and winapi.show_in_folder(latest):
+        if latest:
+            if not winapi.show_in_folder(latest):
+                process.open_with_windows(latest.parent)
             return
         folder = self.folders()["videos"]
         folder.mkdir(parents=True, exist_ok=True)

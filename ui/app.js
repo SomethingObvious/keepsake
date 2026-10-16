@@ -46,6 +46,7 @@ const ICONS = {
   bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   wrench: '<path d="M14.5 5.5a4 4 0 0 0-5 5L4.5 15.5a1.4 1.4 0 0 0 2 2l5-5a4 4 0 0 0 5-5l-2.4 2.4-2-2z"/>',
+  scissors: '<circle cx="6.5" cy="7" r="2.5"/><circle cx="6.5" cy="17" r="2.5"/><path d="M8.6 8.5 19.5 17M8.6 15.5 19.5 7"/>',
   eraser: '<path d="M8 19.5 4.6 16.1a1.5 1.5 0 0 1 0-2.1l9-9a1.5 1.5 0 0 1 2.1 0l3.4 3.4a1.5 1.5 0 0 1 0 2.1l-8.9 9zM9.3 9.3l5.4 5.4M11 19.5h8.5"/>',
   minimize: '<path d="M4.5 12h15"/>',
   maximize: '<rect x="4.5" y="4.5" width="15" height="15" rx="2"/>',
@@ -682,8 +683,8 @@ async function download() {
   await poll();
 }
 
-/** @param {string} [given] */
-async function preview(given) {
+/** @param {string} [given] @param {boolean} [clip] open with the clip bar in hand */
+async function preview(given, clip = false) {
   const url = given ?? urls().value.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
   if (!url) {
     urls().focus();
@@ -703,6 +704,20 @@ async function preview(given) {
     S.preview.clip = previewClip(S.preview, probe);
   }
   renderPreview();
+  if (clip) {
+    handClip();
+  }
+}
+
+/** Brings the preview's clip bar into view with the keyboard on it, or says why there is none. */
+function handClip() {
+  const bar = S.preview?.clip?.bar;
+  if (!bar) {
+    toast("There is no single video here to clip, so this is a plain preview");
+    return;
+  }
+  bar.scrollIntoView({ block: "center", behavior: "smooth" });
+  /** @type {HTMLElement | null} */ (bar.querySelector("[tabindex]"))?.focus({ preventScroll: true });
 }
 
 /**
@@ -775,7 +790,7 @@ function previewTop(p, probe) {
     : "";
   const fine = video?.kind === "video"
     ? `<div class="fine"><label for="pv-rename">Name</label><input class="field" id="pv-rename" data-pv-field="rename" placeholder="${esc(probe.title)}" value="${esc(p.rename)}">
-      <span>Folder</span><span class="c"><button type="button" class="btn small path" data-pv="folder" title="${esc(p.folder || video.folder)}">${icon("folder")}<span class="where">${esc(p.folder || video.folder)}</span></button></span>
+      <span>Folder</span><span class="c"><button type="button" class="btn small path" data-pv="open-folder" title="Open ${esc(p.folder || video.folder)}">${icon("folder")}<span class="where">${esc(p.folder || video.folder)}</span></button><button type="button" class="btn ghost small" data-pv="folder">Change</button></span>
       <span>Saved as</span><span class="file" title="${esc(video.file)}">${esc(video.file)}</span></div>`
     : "";
   const poster = p.clip?.watch
@@ -1061,8 +1076,14 @@ async function previewAction(act) {
     openSubForm({ url: p.url, name: probe && !failed(probe) ? probe.title : "" });
     return;
   }
+  if (act === "open-folder" && probe && !failed(probe) && probe.kind !== "gallery") {
+    if (!(await api().open_directory(p.folder || probe.folder))) {
+      toast("That folder is not there any more");
+    }
+    return;
+  }
   if (act === "folder") {
-    const folder = await api().pick_folder();
+    const folder = await api().pick_folder(p.folder || (probe && !failed(probe) && probe.kind !== "gallery" ? probe.folder : ""));
     if (folder) {
       p.folder = folder;
       renderPreview();
@@ -1468,7 +1489,7 @@ async function jobAction(act, j) {
       await api().open_path(j.first);
       return;
     case "reveal":
-      await api().reveal(j.first);
+      await revealFile(j.first);
       return;
     case "afterimage":
       await api().afterimage(j.video);
@@ -3146,6 +3167,16 @@ function paintCaptions() {
   shown.hidden = !text;
 }
 
+/** Shows a file in Explorer, and says so when it has been moved or deleted. @param {string} path */
+async function revealFile(path) {
+  const how = await api().reveal(path);
+  if (how === "folder") {
+    toast("That file is not there any more, so this is the folder it was in");
+  } else if (how === "gone") {
+    toast("That file and its folder are not there any more");
+  }
+}
+
 /** @param {LibFile} f @param {HTMLMediaElement} media */
 async function saveFrame(f, media) {
   const made = await api().save_frame(f.path, media.currentTime);
@@ -3153,7 +3184,7 @@ async function saveFrame(f, media) {
     toast("Could not save that frame");
     return;
   }
-  toast(`Saved ${made.split("\\").pop() ?? made}`, { label: "Show in Folder", run: () => api().reveal(made) });
+  toast(`Saved ${made.split("\\").pop() ?? made}`, { label: "Show in Folder", run: () => revealFile(made) });
   await loadLibrary();
 }
 
@@ -3418,7 +3449,7 @@ function bindViewer() {
   });
   on($("#lb-close"), "click", closeBox);
   on($("#lb-open"), "click", () => api().open_path(current()?.path ?? ""));
-  on($("#lb-reveal"), "click", () => api().reveal(current()?.path ?? ""));
+  on($("#lb-reveal"), "click", () => revealFile(current()?.path ?? ""));
   on($("#lb-copy"), "click", async () => {
     if (await api().copy_path(current()?.path ?? "")) {
       toast("Path copied");
@@ -3508,7 +3539,7 @@ function paintSaving() {
       run.ended = now;
       const made = job.first;
       if (job.status === "done" && made) {
-        toast(`Saved ${made.split("\\").pop() ?? made}`, { label: "Show in Folder", run: () => api().reveal(made) });
+        toast(`Saved ${made.split("\\").pop() ?? made}`, { label: "Show in Folder", run: () => revealFile(made) });
       } else if (job.status === "done" && job.mode === "detext") {
         toast(job.stage || "Done");
       } else if (job.status === "failed") {
@@ -3639,7 +3670,7 @@ function bindHistory() {
         toast("Added to the queue");
         break;
       case "reveal":
-        await api().reveal(h.files[0] ?? "");
+        await revealFile(h.files[0] ?? "");
         break;
       case "copy":
         await copyText(h.url);
@@ -3767,10 +3798,17 @@ function bindSettingsExtras() {
   for (const button of $$("[data-pick]")) {
     on(button, "click", async () => {
       const key = button.dataset["pick"] ?? "";
-      const folder = await api().pick_folder();
+      const folder = await api().pick_folder(isSetting(key) ? String(S.settings[key]) : "");
       if (folder && isSetting(key)) {
         save(key, folder);
       }
+    });
+  }
+  for (const button of $$("[data-folders]")) {
+    on(button, "click", async () => {
+      S.settings = await api().use_folders(button.dataset["folders"] ?? "own");
+      paintSettings();
+      toast(button.dataset["folders"] === "downloads" ? "Everything now goes to Downloads" : "Back in Windows' own folders");
     });
   }
   on($("#pick-cookies"), "click", async () => {
@@ -3838,6 +3876,7 @@ function bindSettingsExtras() {
 function bindComposer() {
   on($("#download-btn"), "click", download);
   on($("#preview-btn"), "click", () => preview());
+  on($("#clip-btn"), "click", () => preview(undefined, true));
   on($("#toggle-options"), "click", () => {
     const drawer = $("#drawer");
     drawer.hidden = !drawer.hidden;

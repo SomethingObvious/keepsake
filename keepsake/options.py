@@ -135,6 +135,9 @@ class Options:
     auto_update: bool = True
     ytdlp_channel: str = "stable"  # stable | nightly
     self_update: bool = True
+    # The preview's own player: the picture height it asks for, or sound alone, or
+    # nothing at all. A slow computer stutters on the bigger ones.
+    preview_playback: str = "360"  # 360 | 240 | 144 | sound | off
     last_update: float = 0.0
 
     @classmethod

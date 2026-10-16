@@ -17,6 +17,7 @@ from typing import cast
 import webview
 
 from keepsake import (
+    APP,
     __version__,
     cookies,
     library,
@@ -35,6 +36,7 @@ from keepsake.subscriptions import overrides_from
 
 type Data = dict[str, object]
 LINK_FILE_LIMIT = 20_000_000  # bytes: a list of links, not a video
+FOLDER_KEYS = ("folder", "audio_folder", "picture_folder", "text_folder")
 
 
 def as_text(value: object, default: str = "") -> str:
@@ -61,6 +63,16 @@ def as_ids(value: object) -> list[str]:
         if isinstance(value, list)
         else []
     )
+
+
+def nearest_folder(path: str) -> Path | None:
+    """Return the folder itself if it is there, or the nearest one above it that is."""
+    if not path.strip():
+        return None
+    for folder in (Path(path), *Path(path).parents):
+        if folder.is_dir():
+            return folder
+    return None
 
 
 class Api:
@@ -391,11 +403,42 @@ class Api:
         if target and target.exists():
             process.open_with_windows(target)
 
-    def reveal(self, path: object) -> None:
-        """Show a downloaded file in Explorer."""
+    def reveal(self, path: object) -> str:
+        """Show a downloaded file in Explorer, and say how it went.
+
+        "shown", or "folder" when the file is gone but its folder is there and
+        opens instead, or "gone" when neither is.
+        """
         target = known(self._app, as_text(path))
-        if target and target.exists() and not winapi.show_in_folder(target):
+        if target and target.exists():
+            if not winapi.show_in_folder(target):
+                process.open_with_windows(target.parent)
+            return "shown"
+        if target and target.parent.is_dir():
             process.open_with_windows(target.parent)
+            return "folder"
+        return "gone"
+
+    def open_directory(self, path: object) -> bool:
+        """Open a folder in Explorer. A download folder that is not there yet is made first."""
+        target = known(self._app, as_text(path))
+        if target:
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target = Path(as_text(path))
+            if not as_text(path) or not target.is_dir():
+                return False
+        process.open_with_windows(target)
+        return True
+
+    def use_folders(self, which: object) -> Data:
+        """Put every kind of download in a Keepsake folder in Downloads, or back in Windows' own."""
+        if as_text(which) == "downloads":
+            downloads = str(winapi.known_folder(winapi.DOWNLOADS, "Downloads") / APP)
+            changes: dict[str, object] = dict.fromkeys(FOLDER_KEYS, downloads)
+        else:
+            changes = {key: DEFAULTS[key] for key in FOLDER_KEYS}
+        return self._app.save_settings(changes).dump()
 
     def subtitles(self, path: object) -> list[dict[str, str]]:
         """Return a video's subtitles, beside it and inside it, for the player."""
@@ -473,9 +516,10 @@ class Api:
         if link.startswith(("http://", "https://")):
             process.open_with_windows(link)
 
-    def pick_folder(self) -> str | None:
-        """Ask for a folder."""
-        return self._dialog(webview.FileDialog.FOLDER, directory=self._app.options.folder)
+    def pick_folder(self, start: object = "") -> str | None:
+        """Ask for a folder, starting in the one being changed, or as near it as there is one."""
+        begin = nearest_folder(as_text(start)) or nearest_folder(self._app.options.folder)
+        return self._dialog(webview.FileDialog.FOLDER, directory=str(begin or ""))
 
     def pick_file(self, purpose: object) -> str | None:
         """Ask for a cookies.txt or a file of links."""

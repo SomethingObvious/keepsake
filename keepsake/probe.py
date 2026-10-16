@@ -134,7 +134,7 @@ def filename(info: Info, options: Options) -> str:
 WATCH_HEIGHT = 360
 
 
-def watchable(info: Info) -> Info | None:
+def watchable(info: Info, height: int = WATCH_HEIGHT) -> Info | None:
     """Return a small picture stream the window can play while a part is chosen."""
     streams = [
         f
@@ -144,9 +144,18 @@ def watchable(info: Info) -> Info | None:
         and text(f, "ext") == "mp4"
         and str(f.get("vcodec", "")).startswith(("avc1", "h264"))
     ]
-    streams.sort(key=lambda f: real(f, "height") or 0)
-    big_enough = (f for f in streams if (real(f, "height") or 0) >= WATCH_HEIGHT)
+    streams.sort(key=tier)
+    big_enough = (f for f in streams if tier(f) >= height)
     return next(big_enough, streams[-1] if streams else None)
+
+
+def tier(stream: Info) -> float:
+    """Return a stream's size class: the site's "360p" label, or its height when there is none.
+
+    A wide film's 360p is only 358 pixels tall, so its height alone would pass it over for 720p.
+    """
+    label = re.match(r"(\d{3,4})p", text(stream, "format_note"))
+    return float(label[1]) if label else real(stream, "height") or 0
 
 
 def listenable(info: Info) -> str:
@@ -189,7 +198,10 @@ def summarise_video(info: Info, options: Options) -> dict[str, object]:
             if text(f, "language") and f.get("vcodec") == "none"
         }
     )
-    picture = watchable(info)
+    playback = options.preview_playback
+    picture = watchable(info, int(playback)) if playback.isdigit() else None
+    # Sound alone plays in the same player, over the thumbnail.
+    watch = text(picture, "url") if picture else listenable(info) if playback == "sound" else ""
     return {
         "kind": "playlist" if info.get("_type") == "playlist" else "video",
         "title": text(info, "title", "id"),
@@ -206,7 +218,7 @@ def summarise_video(info: Info, options: Options) -> dict[str, object]:
         "chapters": chapters,
         "languages": languages,
         "file": filename(info, options) if info.get("_type") != "playlist" else "",
-        "watch": text(picture, "url") if picture else "",
+        "watch": watch,
         "listen": listenable(info) if picture and picture.get("acodec") in (None, "none") else "",
         "folder": folder_for(options),
     }
