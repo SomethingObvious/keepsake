@@ -2696,7 +2696,8 @@ function restage(bare) {
 }
 
 // Out of sight Android stops a video, though not a sound, so the viewer carries on with the
-// file's sound alone from the same moment and brings the picture back on return.
+// file's sound alone from the same moment and brings the picture back on return. A paused one
+// goes too, or play pressed in the notification would start a video that Android stops at once.
 document.addEventListener("visibilitychange", () => {
   const media = player();
   const f = current();
@@ -2705,7 +2706,7 @@ document.addEventListener("visibilitychange", () => {
   }
   if (document.hidden && !S.settings.background_play) {
     pauseNow(media);
-  } else if (document.hidden && deck.wanted && f.kind === "video" && document.documentElement.dataset["platform"] === "android") {
+  } else if (document.hidden && !deck.soundOnly && f.kind === "video" && document.documentElement.dataset["platform"] === "android") {
     restage(true);
   } else if (!document.hidden && deck.soundOnly) {
     restage(false);
@@ -3519,16 +3520,16 @@ function setupPlayer(f) {
   media.loop = deck.loop && !marked();
   const resume = box.resume;
   box.resume = null;
-  if (resume && !resume.play) {
-    media.autoplay = false;
+  if (resume) {
+    // Set before the file loads, it reads back as this time even if the player is swapped again first.
+    media.currentTime = resume.time;
+    media.autoplay = resume.play;
   }
   const keep = box.keep ?? prefs;
   Object.assign(deck, { next: keep.next, around: keep.around, tracks: [], track: -1, fps: 30 });
   on(media, "loadedmetadata", () => {
     const left = prefs.at[f.path];
-    if (resume) {
-      media.currentTime = resume.time;
-    } else if (left !== undefined && left < media.duration - 5) {
+    if (!resume && left !== undefined && left < media.duration - 5) {
       media.currentTime = left;
       toast(`Carrying on from ${dur(left)}`);
     }
@@ -3546,6 +3547,10 @@ function setupPlayer(f) {
     wake(root, media);
   });
   on(media, "pause", () => {
+    // A player taken off the stage pauses as it goes, after the next one is already up.
+    if (media !== player()) {
+      return;
+    }
     // Android pauses a hidden video by itself, which is not the listener asking for it. A sound
     // playing out of sight is never paused that way, so a call or another app's music stops it for real.
     if (!document.hidden || deck.soundOnly) {
