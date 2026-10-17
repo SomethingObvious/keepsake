@@ -17,7 +17,6 @@ from typing import cast
 import webview
 
 from keepsake import (
-    APP,
     __version__,
     cookies,
     library,
@@ -31,12 +30,11 @@ from keepsake import (
 )
 from keepsake.app import App, known
 from keepsake.links import extract_urls, kind
-from keepsake.options import BUILT_IN_PRESETS, DEFAULTS, MODES, per_job
+from keepsake.options import BUILT_IN_PRESETS, DEFAULTS, MODES, one_folder, own_folders, per_job
 from keepsake.subscriptions import overrides_from
 
 type Data = dict[str, object]
 LINK_FILE_LIMIT = 20_000_000  # bytes: a list of links, not a video
-FOLDER_KEYS = ("folder", "audio_folder", "picture_folder", "text_folder")
 
 
 def as_text(value: object, default: str = "") -> str:
@@ -90,6 +88,7 @@ class Api:
         return {
             "settings": app.options.dump(),
             "defaults": DEFAULTS,
+            "own_folders": own_folders(),
             "browsers": cookies.browsers(),
             "afterimage": paths.AFTERIMAGE.is_file(),
             "data": str(paths.DATA),
@@ -433,11 +432,7 @@ class Api:
 
     def use_folders(self, which: object) -> Data:
         """Put every kind of download in a Keepsake folder in Downloads, or back in Windows' own."""
-        if as_text(which) == "downloads":
-            downloads = str(winapi.known_folder(winapi.DOWNLOADS, "Downloads") / APP)
-            changes: dict[str, object] = dict.fromkeys(FOLDER_KEYS, downloads)
-        else:
-            changes = {key: DEFAULTS[key] for key in FOLDER_KEYS}
+        changes = one_folder() if as_text(which) == "downloads" else own_folders()
         return self._app.save_settings(changes).dump()
 
     def subtitles(self, path: object) -> list[dict[str, str]]:

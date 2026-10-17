@@ -195,6 +195,7 @@ interface SignIn {
 interface Boot {
   settings: Settings;
   defaults: Settings;
+  own_folders: Record<string, string>;
   browsers: string[];
   afterimage: boolean;
   data: string;

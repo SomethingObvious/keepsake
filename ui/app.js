@@ -227,6 +227,8 @@ function paintIcons(root = document) {
 const S = {
   settings: /** @type {Settings} */ ({}),
   defaults: /** @type {Settings} */ ({}),
+  /** The system's own folder for each kind, which All in One Place can go back to. @type {Record<string, string>} */
+  ownFolders: {},
   browsers: /** @type {string[]} */ ([]),
   afterimage: false,
   textRemoval: /** @type {TextRemoval | null} */ (null),
@@ -409,7 +411,7 @@ function paintSettings() {
     $("#template-row").hidden = Boolean(preset.value);
   }
   const spots = FOLDER_KEYS.map((key) => S.settings[key]);
-  const where = spots.every((spot) => spot === spots[0]) ? "downloads" : FOLDER_KEYS.every((key) => S.settings[key] === S.defaults[key]) ? "own" : "";
+  const where = spots.every((spot) => spot === spots[0]) ? "downloads" : FOLDER_KEYS.every((key) => S.settings[key] === S.ownFolders[key]) ? "own" : "";
   for (const button of $$("[data-folders]")) {
     button.classList.toggle("on", button.dataset["folders"] === where);
     button.setAttribute("aria-pressed", String(button.dataset["folders"] === where));
@@ -4226,6 +4228,7 @@ async function boot() {
   const b = await api().boot();
   S.settings = b.settings;
   S.defaults = b.defaults;
+  S.ownFolders = b.own_folders;
   S.browsers = b.browsers;
   S.afterimage = b.afterimage;
   S.presets = b.presets;
