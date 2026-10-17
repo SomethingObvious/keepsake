@@ -71,3 +71,20 @@ def test_ffmpeg_shows_its_release_or_a_nightly_build_date() -> None:
     assert ffmpeg_version(nightly) == "2026.07.31"
     assert ffmpeg_version("ffmpeg version 7.1-full_build-www.gyan.dev Copyright") == "7.1"
     assert ffmpeg_version(None) is None
+
+
+def test_a_saved_playlist_replaces_itself_in_order(data: Path) -> None:
+    """Saving under an existing id swaps that entry, and values of the wrong type fall back."""
+    first = library.save_playlist({"name": " Road trip ", "files": ["a.mp4", 3, "b.mp3"]})
+    second = library.save_playlist({"name": "", "files": "nope", "at": True})
+    assert [p["name"] for p in second] == ["Road trip", "Playlist"]
+    assert first[0]["files"] == ["a.mp4", "b.mp3"]
+    assert second[1]["files"] == []
+    assert second[1]["at"] == 0
+    road = str(first[0]["id"])
+    library.save_playlist({"id": road, "name": "Drive", "files": ["b.mp3"], "at": 1})
+    renamed = library.playlists()
+    assert [p["name"] for p in renamed] == ["Drive", "Playlist"]
+    assert renamed[0]["at"] == 1
+    assert [p["name"] for p in library.delete_playlist(road)] == ["Playlist"]
+    assert (data / "playlists.json").is_file()

@@ -156,6 +156,8 @@ class Options:
     # The preview's own player: the picture height it asks for, or sound alone, or
     # nothing at all. A slow computer stutters on the bigger ones.
     preview_playback: str = "360"  # 360 | 240 | 144 | sound | off
+    background_play: bool = True  # keeps playing out of sight, the screen off on a phone
+    media_controls: bool = True  # a player in the phone's notification bar and lock screen
     last_update: float = 0.0
 
     @classmethod

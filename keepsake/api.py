@@ -463,6 +463,16 @@ class Api:
         drawn = media.waveform(target, paths.DATA / "waves")
         return drawn.as_uri() if drawn else ""
 
+    def player_art(self, path: object) -> dict[str, str]:
+        """Return a download's own thumbnail and its sound's waveform, for a phone's player."""
+        target = known(self._app, as_text(path))
+        if not target or not target.is_file() or kind(target) not in ("audio", "video"):
+            return {"picture": "", "wave": ""}
+        url = self._app.queue.history.thumb_for(str(target))
+        picture = library.cover(url, paths.DATA / "covers") if url else None
+        wave = media.waveform(target, paths.DATA / "waves")
+        return {"picture": str(picture or ""), "wave": str(wave or "")}
+
     def thumbnail(self, path: object) -> str:
         """Return a small picture of a downloaded file for its library tile, as a link, or ""."""
         target = known(self._app, as_text(path))
@@ -553,6 +563,18 @@ class Api:
         return str(chosen[0]) if chosen else None
 
     # --- history ---
+
+    def playlists(self) -> list[dict[str, object]]:
+        """Return the playlists."""
+        return library.playlists()
+
+    def save_playlist(self, playlist: object) -> list[dict[str, object]]:
+        """Store a new or changed playlist and return them all."""
+        return library.save_playlist(playlist)
+
+    def delete_playlist(self, playlist_id: object) -> list[dict[str, object]]:
+        """Drop a playlist and return the rest."""
+        return library.delete_playlist(as_text(playlist_id))
 
     def history(self) -> Data:
         """Return every finished download, and the totals."""

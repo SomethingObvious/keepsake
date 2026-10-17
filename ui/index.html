@@ -470,6 +470,7 @@
             <h1>Library</h1>
             <span class="sub" id="libcount"></span>
             <div class="right">
+              <button type="button" class="btn" id="lib-play" title="Play everything shown, one after another"><span data-i="play"></span><span class="label">Play All</span></button>
               <button type="button" class="btn" id="lib-select" aria-pressed="false" title="Pick several files (or Ctrl+click one)"><span data-i="check"></span><span class="label">Select</span></button>
               <button type="button" class="btn" id="lib-folder" title="Open folder"><span data-i="folder"></span><span class="label">Open folder</span></button>
               <button type="button" class="btn" id="lib-refresh" title="Refresh"><span data-i="refresh"></span><span class="label">Refresh</span></button>
@@ -481,6 +482,7 @@
               <button type="button" data-v="video">Video</button>
               <button type="button" data-v="image">Pictures</button>
               <button type="button" data-v="audio">Audio</button>
+              <button type="button" data-v="lists">Playlists</button>
             </div>
             <div class="search">
               <span data-i="search"></span>
@@ -496,11 +498,13 @@
             </select>
           </div>
           <div class="grid" id="grid"></div>
+          <div class="lists" id="lists" hidden></div>
           <div class="bulk" id="lib-bulk" hidden>
             <span class="count-label" id="lib-bulk-count"></span>
             <button type="button" class="btn small" id="lib-all">Select All Shown</button>
             <button type="button" class="btn ghost small" id="lib-none">Clear Selection</button>
             <span class="grow"></span>
+            <button type="button" class="btn small" id="lib-add"><span data-i="playlist"></span><span class="label">Add to Playlist</span></button>
             <button type="button" class="btn small" id="lib-detext" hidden title="Save a copy of each picked picture with its captions, stickers and watermarks taken off"><span data-i="eraser"></span><span class="label">Remove Added Text</span></button>
             <button type="button" class="btn small" id="lib-delete"><span data-i="trash"></span><span class="label">Move to Recycle Bin</span></button>
           </div>
@@ -649,6 +653,10 @@
               <div class="c"><button type="button" class="btn" id="show-keys">Show Shortcuts</button></div></div>
             <div class="setting"><div><div class="l">Notifications</div><div class="h">When a download finishes or fails while you are elsewhere</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="notify" aria-label="Notifications"></div></div>
+            <div class="setting"><div><div class="l">Keep playing out of sight</div><div class="h">With the screen off, or another app or window in front</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="background_play" aria-label="Keep playing out of sight"></div></div>
+            <div class="setting" data-phone><div><div class="l">Player in the notification bar</div><div class="h">Play, pause and skip from the notification bar, the lock screen and headphones</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="media_controls" aria-label="Player in the notification bar"></div></div>
             <div class="setting"><div><div class="l">A sound when a download finishes</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="sound" aria-label="Sound"></div></div>
             <div class="setting"><div><div class="l">Preview playback</div><div class="h">How big a video a link's preview plays. A slow computer plays a smaller one smoothly, or the sound alone. The clip bar works with any of them, even off.</div></div>
@@ -722,6 +730,7 @@
           <button type="button" class="btn ghost" id="lb-open" title="Open"><span data-i="external"></span><span class="label">Open</span></button>
           <button type="button" class="btn ghost" id="lb-reveal" title="Show in folder"><span data-i="folder"></span><span class="label">Show in folder</span></button>
           <button type="button" class="btn ghost" id="lb-copy" title="Copy path"><span data-i="copy"></span><span class="label">Copy path</span></button>
+          <button type="button" class="btn ghost" id="lb-add" title="Add to a playlist"><span data-i="playlist"></span><span class="label">Add to Playlist</span></button>
           <button type="button" class="btn ghost" id="lb-after" data-desktop hidden title="Open in Afterimage"><span data-i="aperture"></span><span class="label">Afterimage</span></button>
           <button type="button" class="btn ghost" id="lb-detext" hidden title="Save a copy with the captions, stickers and watermarks taken off (T)"><span data-i="eraser"></span><span class="label">Remove Added Text</span></button>
           <button type="button" class="btn ghost" id="lb-playable" data-convert="compatible" hidden title="A copy in H.264 and AAC in an MP4, which every player and phone plays. Made on the graphics card when there is one."><span data-i="film"></span><span class="label">Make a Playable Copy</span></button>
@@ -796,6 +805,19 @@
       </section>
       </div>
       <form method="dialog"><button type="submit" class="btn">Close</button></form>
+    </dialog>
+
+    <dialog id="pick-list" aria-labelledby="pick-list-title">
+      <form method="dialog">
+        <h2 class="dialog-title" id="pick-list-title">Add to Playlist</h2>
+        <div class="list-choices" id="list-choices"></div>
+        <div class="new-list">
+          <label class="visually-hidden" for="new-list-name">New playlist name</label>
+          <input type="text" name="new-list-name" autocomplete="off" class="field" id="new-list-name" placeholder="Or name a new one" spellcheck="false">
+          <button type="submit" class="btn" value="new">Make It</button>
+        </div>
+        <div class="actions"><button type="submit" class="btn ghost" value="cancel">Cancel</button></div>
+      </form>
     </dialog>
 
     <dialog id="ask" aria-labelledby="ask-title">

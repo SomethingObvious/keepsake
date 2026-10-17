@@ -52,6 +52,8 @@ ignore = [
 "keepsake/tools.py" = ["S310"]
 "scripts/build.py" = ["S310"]
 "keepsake/updates.py" = ["S310"]
+# A download's thumbnail, at the https address the site itself gave for it.
+"keepsake/library.py" = ["S310"]
 # A stub has to use its library's own names, lower-case classes and all.
 "typings/**" = ["N801"]
 

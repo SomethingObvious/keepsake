@@ -2,6 +2,6 @@
 
 # pre-push refuses a push to main that does not raise this, and installed copies
 # move to each new version by themselves.
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 
 APP = "Keepsake"

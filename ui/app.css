@@ -1062,6 +1062,237 @@
     font-size: 12px;
   }
 
+  .lists-head {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 14px;
+  }
+
+  .list-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 4px;
+    align-items: center;
+    padding-right: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .list-open {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    min-width: 0;
+    padding: 14px 12px;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 500 15px var(--sans);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .list-open .i {
+    width: 20px;
+    height: 20px;
+    color: var(--text-faint);
+  }
+
+  .list-open .n,
+  .list-play .n,
+  .list-choice .n {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .list-open .c,
+  .list-choice .c {
+    flex: none;
+    color: var(--text-faint);
+    font: 12px var(--sans);
+  }
+
+  .list-top {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .list-top > .btn {
+    justify-self: start;
+  }
+
+  .list-title {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    align-items: baseline;
+  }
+
+  .list-name {
+    margin: 0;
+    font: 300 30px/1.1 var(--sans);
+    font-stretch: 125%;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .list-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .list-items {
+    border-top: 1px solid var(--ink);
+  }
+
+  .list-item {
+    display: grid;
+    grid-template-columns: 34px 30px 10px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding-right: 6px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .list-item .no {
+    color: var(--text-dim);
+    font: 300 15px var(--sans);
+    font-stretch: 125%;
+  }
+
+  .list-item .code {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* Where a playlist was left, in the red of the one in hand. */
+  .left-off .no {
+    color: var(--accent);
+  }
+
+  .list-play {
+    display: grid;
+    min-width: 0;
+    padding: 13px 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: 500 13.5px var(--sans);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .list-play .m {
+    color: var(--text-faint);
+    font: 12px var(--sans);
+  }
+
+  .list-item.gone .list-play {
+    color: var(--text-faint);
+    cursor: default;
+  }
+
+  .grip {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-ghost);
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .grip:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: -4px;
+  }
+
+  .list-item.lifted {
+    position: relative;
+    z-index: 1;
+    outline: 1px solid var(--ink);
+    background: var(--surface-2);
+  }
+
+  .list-item.lifted .grip {
+    color: var(--ink);
+    cursor: grabbing;
+  }
+
+  @media (hover: hover) {
+    .list-row:hover,
+    .list-item:hover {
+      background: var(--surface-2);
+    }
+
+    .grip:hover {
+      color: var(--ink);
+    }
+  }
+
+  .list-choices {
+    display: grid;
+    max-height: 50vh;
+    margin-bottom: 16px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+  }
+
+  .list-choice {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    padding: 12px 6px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: none;
+    color: var(--text);
+    font: 500 14px var(--sans);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .list-choice .n {
+    flex: 1;
+  }
+
+  @media (hover: hover) {
+    .list-choice:hover {
+      background: var(--surface-2);
+    }
+  }
+
+  .new-list {
+    display: flex;
+    gap: 8px;
+  }
+
+  .new-list .field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* The sleep timer's minutes left, small in the corner of its moon. */
+  .player .sleep {
+    position: relative;
+  }
+
+  .sleep-left {
+    position: absolute;
+    right: 0;
+    bottom: 1px;
+    font: 600 9px var(--sans);
+    letter-spacing: 0;
+  }
+
   .empty {
     padding-top: 18px;
     border-top: 1px solid var(--ink);
@@ -4140,8 +4371,13 @@
       flex: 1 1 100%;
     }
 
+    /* Five filters share a phone's width in the narrow cut, as the tabs below do. */
     .toolbar .seg button {
-      flex: 1;
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 0 4px;
+      font-stretch: 75%;
+      letter-spacing: 0.04em;
     }
 
     .toolbar .search {
@@ -4363,6 +4599,10 @@
     clipboard watcher or Afterimage, so what is only for those stays out. */
   :root[data-platform="android"] {
     --bar: 0;
+  }
+
+  :root:not([data-platform="android"]) [data-phone] {
+    display: none;
   }
 
   :root[data-platform="android"] :is([data-desktop], [data-act="afterimage"], [data-p="pip"]) {
