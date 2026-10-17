@@ -59,7 +59,7 @@
                 <option value="auto">Auto</option>
                 <option value="video">Video</option>
                 <option value="audio">Audio only</option>
-                <option value="images">Images</option>
+                <option value="images">Pictures</option>
                 <option value="transcript">Transcript</option>
               </select>
               <label class="visually-hidden" for="quality">Highest resolution</label>
@@ -479,7 +479,7 @@
             <div class="seg" id="libfilter" role="group" aria-label="Show">
               <button type="button" data-v="all" class="on">All</button>
               <button type="button" data-v="video">Video</button>
-              <button type="button" data-v="image">Images</button>
+              <button type="button" data-v="image">Pictures</button>
               <button type="button" data-v="audio">Audio</button>
             </div>
             <div class="search">
@@ -557,10 +557,10 @@
             <div class="setting"><div><div class="l">Transcripts</div><div class="h" data-folder-show="text_folder"></div></div>
               <div class="c"><button type="button" class="btn" data-pick="text_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="documents">Open</button></div></div>
             <div class="setting roomy"><div><div class="l">All in one place</div><div class="h">Send every kind of download to a Keepsake folder in Downloads, or back to the four folders above</div></div>
-              <div class="c"><button type="button" class="btn" data-folders="downloads"><span data-i="download"></span>Use Downloads</button><button type="button" class="btn ghost" data-folders="own">Use Windows' Folders</button></div></div>
+              <div class="c"><div class="seg" role="group" aria-label="Where downloads go"><button type="button" data-folders="downloads" aria-pressed="false">Downloads</button><button type="button" data-folders="own" aria-pressed="false">Windows' Folders</button></div></div></div>
             <div class="setting"><div><div class="l">Sort into folders by site</div><div class="h">Off: videos sit loose and each gallery gets one folder, named from its link. On: a folder per site, and gallery-dl's own folders by account.</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="by_site" aria-label="Sort into folders by site"></div></div>
-            <div class="setting"><div><div class="l">File names</div><div class="h">A yt-dlp output template. Pick one or write your own.</div></div>
+            <div class="setting"><div><div class="l">File names</div><div class="h">How each download is named. Custom takes a yt-dlp output template.</div></div>
               <div class="c">
                 <label class="visually-hidden" for="template-preset">File name pattern</label>
                 <select class="field" id="template-preset">
@@ -572,7 +572,7 @@
                   <option value="">Custom</option>
                 </select>
               </div>
-              <div class="c span"><label class="visually-hidden" for="template">Template</label><input type="text" name="template" autocomplete="off" class="field mono" id="template" data-set="template" spellcheck="false"></div></div>
+              <div class="c span" id="template-row"><label class="visually-hidden" for="template">Template</label><input type="text" name="template" autocomplete="off" class="field mono" id="template" data-set="template" spellcheck="false"></div></div>
             <div class="setting"><div><div class="l">File date</div><div class="h">What Explorer shows as the modified date</div></div>
               <div class="c"><label class="visually-hidden" for="file-date">File date</label><select class="field" id="file-date" data-set="file_date"><option value="download">When downloaded</option><option value="upload">When uploaded</option></select></div></div>
             <div class="setting"><div><div class="l">Longest file name</div><div class="h">Characters. Windows breaks past 260 for a whole path.</div></div>
@@ -645,6 +645,8 @@
               <div class="c"><input type="checkbox" class="switch" data-set="close_to_tray" aria-label="Keep running in the tray"></div></div>
             <div class="setting" data-desktop><div><div class="l">Start with Windows</div><div class="h">Quietly, in the tray</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="autostart" aria-label="Start with Windows"></div></div>
+            <div class="setting" data-desktop><div><div class="l">Keyboard shortcuts</div><div class="h">Or press <kbd>?</kbd> anywhere outside a text box</div></div>
+              <div class="c"><button type="button" class="btn" id="show-keys">Show Shortcuts</button></div></div>
             <div class="setting"><div><div class="l">Notifications</div><div class="h">When a download finishes or fails while you are elsewhere</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="notify" aria-label="Notifications"></div></div>
             <div class="setting"><div><div class="l">A sound when a download finishes</div></div>
@@ -664,7 +666,7 @@
             <div class="setting"><div><div class="l">yt-dlp plugins</div><div class="h">Anything in this folder is loaded, such as a PO token provider</div></div>
               <div class="c"><button type="button" class="btn" data-open="plugins"><span data-i="folder"></span>Open plugins folder</button></div></div>
             <div class="setting" id="text-removal"><div><div class="l">Remove added text</div><div class="h" id="detext-about"></div></div>
-              <div class="c"><button type="button" class="btn" id="detext-quick" hidden>Set Up Quick</button><button type="button" class="btn" id="detext-best" hidden>Set Up Best</button><button type="button" class="btn ghost" id="detext-forget" hidden>Remove It</button></div></div>
+              <div class="c"><button type="button" class="btn" id="detext-quick" hidden>Set Up Quick</button><button type="button" class="btn" id="detext-best" hidden>Set Up Best</button><button type="button" class="btn ghost" id="detext-forget" hidden>Uninstall</button></div></div>
             <div class="setting"><div><div class="l">Keepsake <span class="mono" id="app-version"></span></div><div class="h" id="app-state"></div></div>
               <div class="c"><button type="button" class="btn primary" id="app-restart-2" hidden>Restart to update</button><button type="button" class="btn" id="app-check">Check now</button></div></div>
             <ul class="notes" id="app-notes" hidden></ul>
@@ -809,5 +811,6 @@
     </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="announce" class="visually-hidden" aria-live="polite"></div>
   </body>
 </html>

@@ -447,6 +447,11 @@ class Api:
             return []
         return media.subtitle_tracks(target)
 
+    def plays_everywhere(self, path: object) -> bool:
+        """Return whether a video is already H.264 and AAC in an MP4, so needs no playable copy."""
+        target = known(self._app, as_text(path))
+        return bool(target and target.is_file() and media.plays_everywhere(target))
+
     def save_frame(self, path: object, seconds: object) -> str | None:
         """Save the frame the player is showing as a picture beside the video; return its path."""
         target = known(self._app, as_text(path))
