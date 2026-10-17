@@ -1935,6 +1935,7 @@ function readSubForm() {
 function renderSubs() {
   const subs = S.state?.subs ?? [];
   $("#subs-empty").hidden = subs.length > 0;
+  $("#subs-check").hidden = subs.length === 0;
   $("#subs-count").textContent = subs.length ? `${String(subs.length)} watched` : "";
   const running = new Set((S.state?.jobs ?? []).filter((j) => j.sub && (j.status === "running" || j.status === "queued")).map((j) => j.sub));
   /** @param {number} hours */
@@ -3024,7 +3025,12 @@ function setupPlayer(f) {
 async function controlClick(event, root, media, f) {
   const target = event.target instanceof Element ? event.target : null;
   if (target === media) {
-    await togglePlay(media);
+    // A finger cannot hover, so the first tap on a playing video brings its controls back rather than pausing it.
+    if (root.classList.contains("idle") && matchMedia("(hover: none)").matches) {
+      wake(root, media);
+    } else {
+      await togglePlay(media);
+    }
     return;
   }
   const wave = target?.closest(".art .sound");
