@@ -257,7 +257,7 @@ class Api:
             case "cancel":
                 queue.each(queue.ids("running", "queued", "paused"), queue.cancel)
             case "retry":
-                queue.each(queue.ids("failed"), queue.retry)
+                queue.each(queue.ids("failed") + queue.incomplete(), queue.retry)
             case "clear":
                 queue.clear_finished()
             case "hold":

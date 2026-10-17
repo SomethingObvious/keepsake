@@ -300,6 +300,7 @@ interface HistEntry {
   bytes: number;
   finished: number | null;
   said: string;
+  errors?: number;
   sub: string;
 }
 

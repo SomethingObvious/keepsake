@@ -210,17 +210,18 @@
     box-sizing: border-box;
   }
 
+  /* Clip, not hidden: a hidden box can still be scrolled by scrollIntoView, which would carry the title bar off the top. */
   html,
   body {
     margin: 0;
     height: 100%;
+    overflow: clip;
   }
 
   body {
     display: grid;
     grid-template-rows: var(--bar) minmax(0, 1fr);
     grid-template-columns: 224px 1fr;
-    overflow: hidden;
     background: var(--bg);
     color: var(--text);
     font: 13px/1.45 var(--sans);
@@ -806,7 +807,9 @@
     min-width: 0;
     height: 32px;
     padding: 0 10px;
-    border: 1px solid var(--edge);
+
+    /* Edge is too faint to find a field by: 3.7 to 1 here against 2.2. */
+    border: 1px solid var(--code-wait);
     outline: none;
     background: none;
     transition: border-color 0.15s;
@@ -912,8 +915,40 @@
     color: var(--text);
   }
 
+  /* A square hairline box that takes a block when ticked, like the code blocks beside it. */
   input[type="checkbox"]:not(.switch) {
-    accent-color: var(--ink);
+    display: inline-grid;
+    flex: none;
+    place-content: center;
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    border: 1px solid var(--text-faint);
+    background: none;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  input[type="checkbox"]:not(.switch)::before {
+    width: 8px;
+    height: 8px;
+    background: var(--ink);
+    content: "";
+    transform: scale(0);
+    transition: transform 0.1s;
+  }
+
+  input[type="checkbox"]:not(.switch):checked::before {
+    transform: none;
+  }
+
+  input[type="checkbox"]:not(.switch):hover {
+    border-color: var(--ink);
+  }
+
+  input[type="checkbox"]:not(.switch):focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 2px;
   }
 
   .spinner {
@@ -937,7 +972,7 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    overflow: hidden;
+    overflow: clip;
   }
 
   .page {
@@ -1501,6 +1536,14 @@
     text-transform: uppercase;
   }
 
+  /* What to do with the section, as a sentence, so it stays out of the capitals. */
+  .section-title .hint {
+    margin-left: 12px;
+    font: 12px var(--sans);
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
   .entries {
     overscroll-behavior: contain;
     max-height: 300px;
@@ -1802,6 +1845,10 @@
 
   .job.done .state {
     color: var(--text-faint);
+  }
+
+  .job.done.partial .state {
+    color: var(--warn);
   }
 
   .why {
@@ -2792,9 +2839,11 @@
   }
 
   #lightbox .mt {
+    overflow: hidden;
     color: var(--text-faint);
     font: 12px var(--sans);
     font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -3311,10 +3360,7 @@
     display: none;
     place-items: center;
     color: var(--text-faint);
-    font: 500 11px var(--sans);
-    font-stretch: var(--wide);
-    letter-spacing: var(--track);
-    text-transform: uppercase;
+    font: 12px var(--sans);
     pointer-events: none;
   }
 

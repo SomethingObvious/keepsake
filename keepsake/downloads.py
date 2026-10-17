@@ -79,6 +79,7 @@ class History:
             "bytes": size,
             "finished": job.finished,
             "said": job.said,
+            "errors": job.errors,
             "sub": job.sub,
             "keys": job.keys,
         }
@@ -355,6 +356,16 @@ class Queue:
                 job.stage = "Nothing new" if not job.files and job.job_kind == "download" else ""
             if job.skipped and not job.files and job.job_kind == "download":
                 self.name_repeat(job)
+            if job.errors:  # what did arrive is kept, so say why the rest did not
+                last = next(
+                    (
+                        line
+                        for line in reversed(job.log)
+                        if line.startswith("ERROR:") or "][error]" in line
+                    ),
+                    "",
+                )
+                job.said = failures.plainly(last)
             image = next((name for name in job.files if kind(name) == "image"), None)
             if not job.thumb and image:
                 job.thumb = Path(image).as_uri()
@@ -659,6 +670,11 @@ class Queue:
         """Return the ids of jobs in any of these states."""
         with self.lock:
             return [i for i, job in self.jobs.items() if job.status in statuses]
+
+    def incomplete(self) -> list[str]:
+        """Return the ids of finished jobs where some of the files failed."""
+        with self.lock:
+            return [i for i, job in self.jobs.items() if job.status == "done" and job.errors]
 
     def clear_finished(self) -> None:
         """Take finished and cancelled jobs off the list."""
