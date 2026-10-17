@@ -394,8 +394,10 @@ function paintSettings() {
   badge.textContent = String(changed);
   for (const el of $$("[data-folder-show]")) {
     const key = el.dataset["folderShow"] ?? "";
-    el.textContent = isSetting(key) ? String(S.settings[key]) || S.settings.folder : "";
-    el.title = el.textContent;
+    const folder = isSetting(key) ? String(S.settings[key]) || S.settings.folder : "";
+    // Isolated, or the right-to-left box that trims a long path carries a leading slash to its end.
+    el.replaceChildren(Object.assign(document.createElement("bdi"), { textContent: folder }));
+    el.title = folder;
   }
   const preset = $("#template-preset", document);
   if (preset instanceof HTMLSelectElement) {
@@ -792,7 +794,7 @@ function previewTop(p, probe) {
     : "";
   const fine = video?.kind === "video"
     ? `<div class="fine"><label for="pv-rename">Name</label><input class="field" id="pv-rename" data-pv-field="rename" placeholder="${esc(probe.title)}" value="${esc(p.rename)}">
-      <span>Folder</span><span class="c"><button type="button" class="btn small path" data-pv="open-folder" title="Open ${esc(p.folder || video.folder)}">${icon("folder")}<span class="where">${esc(p.folder || video.folder)}</span></button><button type="button" class="btn ghost small" data-pv="folder">Change</button></span>
+      <span>Folder</span><span class="c"><button type="button" class="btn small path" data-pv="open-folder" title="Open ${esc(p.folder || video.folder)}">${icon("folder")}<span class="where"><bdi>${esc(p.folder || video.folder)}</bdi></span></button><button type="button" class="btn ghost small" data-pv="folder">Change</button></span>
       <span>Saves as</span><span class="file" title="${esc(video.file)}">${esc(video.file)}</span></div>`
     : "";
   const poster = p.clip?.watch
@@ -1651,7 +1653,8 @@ function renderTools(state) {
 /** Builds the jump list over the settings page and keeps the section in view marked. */
 function bindSettingsIndex() {
   const page = $("#settings");
-  const sheets = $$(".sheet", page);
+  // A section the platform has no use for is not displayed, and gets no place in the index either.
+  const sheets = $$(".sheet", page).filter((sheet) => getComputedStyle(sheet).display !== "none");
   const nav = $("#settings-index");
   const topOf = (/** @type {HTMLElement} */ sheet) => sheet.getBoundingClientRect().top - page.getBoundingClientRect().top + page.scrollTop;
   nav.innerHTML = sheets.map((sheet, i) => `<button type="button" data-sheet="${String(i)}">${esc($("h2", sheet).textContent)}</button>`).join("");
@@ -1676,6 +1679,10 @@ function bindSettingsIndex() {
     }
     $$("[data-sheet]", nav).forEach((button, i) => {
       button.setAttribute("aria-current", String(i === at));
+      // On a phone the index scrolls sideways, so the marked section is kept in sight.
+      if (i === at) {
+        nav.scrollLeft = button.offsetLeft - (nav.clientWidth - button.offsetWidth) / 2;
+      }
     });
   };
   on(page, "scroll", markCurrent);

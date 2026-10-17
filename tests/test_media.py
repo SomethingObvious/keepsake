@@ -53,12 +53,10 @@ def test_a_long_transcript_is_broken_into_paragraphs() -> None:
 
 
 def test_a_converted_file_never_replaces_one_already_there(tmp_path: Path) -> None:
-    """A second conversion gets a number."""
+    """Two clips asked for at once get two names, even before either is written."""
     source = tmp_path / "clip.mp4"
-    first = beside(source, "gif", ".gif")
-    assert first.name == "clip (gif).gif"
-    first.write_bytes(b"")
-    assert beside(source, "gif", ".gif").name == "clip (gif 2).gif"
+    names = [beside(source, "gif", ".gif").name for _ in range(2)]
+    assert names == ["clip (gif).gif", "clip (gif 2).gif"]
 
 
 def test_webvtt_captions_become_a_transcript_too() -> None:

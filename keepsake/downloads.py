@@ -282,12 +282,16 @@ class Queue:
         start, end = clock(options.hours_from), clock(options.hours_to)
         if start and end and not within(now, start, end):
             return f"Waiting for download hours ({options.hours_from} to {options.hours_to})"
+        # The folder itself, not its root: on a phone the root is the system's own small drive.
+        wanted = Path(options.folder)
+        folder = next((p for p in (wanted, *wanted.parents) if p.is_dir()), None)
         try:
-            free = shutil.disk_usage(Path(options.folder).anchor or options.folder).free
+            free = shutil.disk_usage(folder or options.folder).free
         except OSError:
             return ""
         if free < options.min_free_gb * GB:
-            return f"Paused: under {options.min_free_gb} GB free on {Path(options.folder).anchor}"
+            where = wanted.anchor if wanted.drive else wanted
+            return f"Paused: under {options.min_free_gb} GB free on {where}"
         return ""
 
     def pump(self) -> None:

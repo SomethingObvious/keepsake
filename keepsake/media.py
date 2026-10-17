@@ -118,13 +118,22 @@ def duration(path: Path) -> float | None:
 
 
 def beside(path: Path, note: str, suffix: str) -> Path:
-    """Return a new name beside a file, never one that already exists."""
-    candidate = path.with_name(f"{path.stem} ({note}){suffix}")
-    number = 2
-    while candidate.exists():
-        candidate = path.with_name(f"{path.stem} ({note} {number}){suffix}")
-        number += 1
-    return candidate
+    """Return a new name beside a file, never one already there, held with an empty file.
+
+    Two clips of one video run side by side, so a name only checked as free
+    could be taken by the other before either is written.
+    """
+    number = 1
+    while True:
+        candidate = path.with_name(
+            f"{path.stem} ({note}{f' {number}' if number > 1 else ''}){suffix}"
+        )
+        try:
+            candidate.touch(exist_ok=False)
+        except FileExistsError:
+            number += 1
+        else:
+            return candidate
 
 
 def compatible_command(source: Path, target: Path) -> list[str]:
@@ -774,7 +783,10 @@ def save_frame(path: Path, seconds: float) -> Path | None:
         str(target),
     ]
     done = process.run(command, timeout=60)
-    return target if done.returncode == 0 and target.is_file() else None
+    if done.returncode == 0 and target.is_file() and target.stat().st_size:
+        return target
+    target.unlink(missing_ok=True)
+    return None
 
 
 def kept(path: Path, folder: Path, suffix: str) -> Path:
