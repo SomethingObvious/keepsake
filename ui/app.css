@@ -370,18 +370,22 @@
     app-region: no-drag;
   }
 
-  .win:hover {
-    background: rgb(255 255 255 / 6%);
-    color: var(--text);
+  @media (hover: hover) {
+    .win:hover {
+      background: rgb(255 255 255 / 6%);
+      color: var(--text);
+    }
   }
 
   .win:active {
     background: rgb(255 255 255 / 4%);
   }
 
-  .win.close:hover {
-    background: #c42b1c;
-    color: #fff;
+  @media (hover: hover) {
+    .win.close:hover {
+      background: #c42b1c;
+      color: #fff;
+    }
   }
 
   .win.close:active {
@@ -480,8 +484,10 @@
     transition: background 0.15s, color 0.15s;
   }
 
-  .tab:hover {
-    color: var(--text);
+  @media (hover: hover) {
+    .tab:hover {
+      color: var(--text);
+    }
   }
 
   .tab.on {
@@ -639,8 +645,10 @@
     transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
 
-  .btn:hover {
-    border-color: var(--ink);
+  @media (hover: hover) {
+    .btn:hover {
+      border-color: var(--ink);
+    }
   }
 
   .btn:active {
@@ -701,9 +709,11 @@
     content: "";
   }
 
-  .btn.primary:hover {
-    background: var(--ink);
-    color: var(--ink-on);
+  @media (hover: hover) {
+    .btn.primary:hover {
+      background: var(--ink);
+      color: var(--ink-on);
+    }
   }
 
   .btn.ghost {
@@ -711,9 +721,11 @@
     color: var(--text-dim);
   }
 
-  .btn.ghost:hover {
-    border-color: var(--edge);
-    color: var(--text);
+  @media (hover: hover) {
+    .btn.ghost:hover {
+      border-color: var(--edge);
+      color: var(--text);
+    }
   }
 
   .btn.small {
@@ -755,14 +767,18 @@
     transition: border-color 0.15s, color 0.15s;
   }
 
-  .icon-btn:hover {
-    border-color: var(--edge);
-    color: var(--text);
+  @media (hover: hover) {
+    .icon-btn:hover {
+      border-color: var(--edge);
+      color: var(--text);
+    }
   }
 
-  .icon-btn.warn:hover {
-    border-color: var(--accent);
-    color: var(--warn);
+  @media (hover: hover) {
+    .icon-btn.warn:hover {
+      border-color: var(--accent);
+      color: var(--warn);
+    }
   }
 
   .icon-btn.accent {
@@ -793,8 +809,10 @@
     border-left: 0;
   }
 
-  .seg button:hover {
-    color: var(--text);
+  @media (hover: hover) {
+    .seg button:hover {
+      color: var(--text);
+    }
   }
 
   .seg button.on {
@@ -839,8 +857,10 @@
     color: var(--text);
   }
 
-  .field:hover {
-    border-color: var(--text-faint);
+  @media (hover: hover) {
+    .field:hover {
+      border-color: var(--text-faint);
+    }
   }
 
   .field:focus {
@@ -919,8 +939,10 @@
     cursor: pointer;
   }
 
-  .check:hover {
-    color: var(--text);
+  @media (hover: hover) {
+    .check:hover {
+      color: var(--text);
+    }
   }
 
   /* A square hairline box that takes a block when ticked, like the code blocks beside it. */
@@ -950,8 +972,10 @@
     transform: none;
   }
 
-  input[type="checkbox"]:not(.switch):hover {
-    border-color: var(--ink);
+  @media (hover: hover) {
+    input[type="checkbox"]:not(.switch):hover {
+      border-color: var(--ink);
+    }
   }
 
   input[type="checkbox"]:not(.switch):focus-visible {
@@ -1140,8 +1164,10 @@
     cursor: pointer;
   }
 
-  .inline:hover {
-    text-decoration-color: var(--ink);
+  @media (hover: hover) {
+    .inline:hover {
+      text-decoration-color: var(--ink);
+    }
   }
 
   .composer .go {
@@ -1517,9 +1543,11 @@
     cursor: pointer;
   }
 
-  .formats tr[data-spec]:hover td {
-    background: var(--surface-2);
-    color: var(--text);
+  @media (hover: hover) {
+    .formats tr[data-spec]:hover td {
+      background: var(--surface-2);
+      color: var(--text);
+    }
   }
 
   .formats tr[data-spec].on td {
@@ -1570,9 +1598,11 @@
     cursor: pointer;
   }
 
-  .entries label:hover {
-    background: var(--surface-2);
-    color: var(--text);
+  @media (hover: hover) {
+    .entries label:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
   }
 
   .entries input {
@@ -1743,8 +1773,10 @@
     animation: arrive 0.25s var(--ease);
   }
 
-  .job:hover {
-    background: var(--surface-2);
+  @media (hover: hover) {
+    .job:hover {
+      background: var(--surface-2);
+    }
   }
 
   .job.picked {
@@ -1767,8 +1799,10 @@
     animation: none;
   }
 
-  .job.ghost:hover {
-    background: none;
+  @media (hover: hover) {
+    .job.ghost:hover {
+      background: none;
+    }
   }
 
 
@@ -1914,9 +1948,14 @@
     stroke: var(--ink);
   }
 
-  .job.picked .signal polyline,
-  .job:hover.running .signal polyline {
+  .job.picked .signal polyline {
     stroke-width: 2;
+  }
+
+  @media (hover: hover) {
+    .job:hover.running .signal polyline {
+      stroke-width: 2;
+    }
   }
 
   .job .acts {
@@ -2036,19 +2075,23 @@
     cursor: pointer;
   }
 
-  .result .pick:hover .poster {
-    outline-color: var(--ink);
+  @media (hover: hover) {
+    .result .pick:hover .poster {
+      outline-color: var(--ink);
+    }
   }
 
+  /* A tick box set into the picture, the way the queue's are drawn. */
   .result .tick {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 6px;
+    left: 6px;
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
-    background: var(--bg);
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--ink);
+    background: rgb(10 10 10 / 55%);
     color: transparent;
   }
 
@@ -2154,8 +2197,10 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .sub-row:hover {
-    background: var(--surface-2);
+  @media (hover: hover) {
+    .sub-row:hover {
+      background: var(--surface-2);
+    }
   }
 
   .sub-row.off {
@@ -2379,8 +2424,10 @@
     white-space: nowrap;
   }
 
-  .tile:hover .n {
-    color: var(--text);
+  @media (hover: hover) {
+    .tile:hover .n {
+      color: var(--text);
+    }
   }
 
   .tile .m {
@@ -2434,8 +2481,10 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .hist-row:hover {
-    background: var(--surface-2);
+  @media (hover: hover) {
+    .hist-row:hover {
+      background: var(--surface-2);
+    }
   }
 
   .hist .hist-row .no {
@@ -2471,8 +2520,10 @@
     transition: filter 0.25s var(--ease);
   }
 
-  .hist-row:hover .thumb > :is(img) {
-    filter: none;
+  @media (hover: hover) {
+    .hist-row:hover .thumb > :is(img) {
+      filter: none;
+    }
   }
 
   .hist-row .thumb .i {
@@ -2557,8 +2608,10 @@
     cursor: pointer;
   }
 
-  .jump [data-sheet]:hover {
-    color: var(--text);
+  @media (hover: hover) {
+    .jump [data-sheet]:hover {
+      color: var(--text);
+    }
   }
 
   .jump [data-sheet][aria-current="true"] {
@@ -2707,8 +2760,10 @@
     cursor: pointer;
   }
 
-  .chip.plain:hover {
-    border-color: var(--ink);
+  @media (hover: hover) {
+    .chip.plain:hover {
+      border-color: var(--ink);
+    }
   }
 
   .chip .icon-btn {
@@ -2899,9 +2954,11 @@
 
   /* the player: the picture, and its controls over the bottom of it */
 
+  /* One row that may shrink, or a video's own height overrides the room it is given and it is cropped. */
   .player {
     position: relative;
     display: grid;
+    grid-template-rows: minmax(0, 1fr);
     place-items: center;
     width: 100%;
     height: 100%;
@@ -3028,8 +3085,10 @@
     transition: inset 0.12s;
   }
 
-  .timeline:hover .groove {
-    inset: 7px 0;
+  @media (hover: hover) {
+    .timeline:hover .groove {
+      inset: 7px 0;
+    }
   }
 
   .timeline .buffered,
@@ -3122,6 +3181,9 @@
 
   .player .time,
   .player .speed {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     height: 30px;
     padding: 0 8px;
     border: 1px solid transparent;
@@ -3136,9 +3198,11 @@
     min-width: 46px;
   }
 
-  .player .time:hover,
-  .player .speed:hover {
-    border-color: var(--edge);
+  @media (hover: hover) {
+    .player .time:hover,
+    .player .speed:hover {
+      border-color: var(--edge);
+    }
   }
 
   .player .big-state {
@@ -3363,6 +3427,15 @@
     text-transform: uppercase;
   }
 
+  /* In a link's preview the section's own heading already says Clip. */
+  #preview .cut-label {
+    display: none;
+  }
+
+  #preview .cut {
+    column-gap: 0;
+  }
+
   .cut-hint {
     position: absolute;
     inset: 0;
@@ -3430,8 +3503,10 @@
     cursor: crosshair;
   }
 
-  .cut-track:hover {
-    border-color: var(--text-faint);
+  @media (hover: hover) {
+    .cut-track:hover {
+      border-color: var(--text-faint);
+    }
   }
 
   /* A sound's waveform under the track, zoomed with it. */
@@ -3780,8 +3855,9 @@
 
   /* ---------- a phone ---------- */
 
-  /* One column: the page, and the index as a row of tabs along the bottom, under the thumb. */
-  @media (width <= 720px) {
+  /* One column: the page, and the index as a row of tabs along the bottom, under the thumb.
+    A phone on its side is wide but short, and a desktop window is never under 640px tall. */
+  @media (width <= 720px), (height <= 500px) {
     body {
       grid-template-rows: var(--bar) minmax(0, 1fr) auto;
       grid-template-columns: minmax(0, 1fr);
@@ -3811,6 +3887,7 @@
     }
 
     .tab {
+      position: relative;
       display: grid;
       grid-template-columns: auto auto;
       place-content: center;
@@ -3818,8 +3895,8 @@
       height: 56px;
       padding: 0 2px;
       border-bottom: 0;
-      font-stretch: 87.5%;
-      letter-spacing: 0.06em;
+      font-stretch: 75%;
+      letter-spacing: 0.04em;
     }
 
     .tab + .tab {
@@ -3853,20 +3930,50 @@
       white-space: nowrap;
     }
 
+    /* The count rides on the icon, so the name keeps the tab's whole width. */
     nav .count {
-      margin: 0 0 0 4px;
+      position: absolute;
+      top: 6px;
+      left: calc(50% + 8px);
+      margin: 0;
+      font-size: 10px;
     }
 
     nav .count:empty {
       display: none;
     }
 
-    .tab.on .count {
-      margin-right: 0;
-    }
-
     .page {
       padding: 14px 16px 32px;
+    }
+
+    /* A page's name a step smaller, so its count fits beside it and the page starts sooner. */
+    .head {
+      gap: 8px 12px;
+      margin-bottom: 14px;
+    }
+
+    .head h1 {
+      font-size: 24px;
+    }
+
+    /* The page's own buttons take their own line under its name, with their words back. */
+    .head .right {
+      flex: 1 1 100%;
+      margin-left: 0;
+    }
+
+    #library .head .btn .label {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+    }
+
+    /* Refresh is the last of them, and its arrow says it alone. */
+    #library .head .btn:last-child .label {
+      display: none;
     }
 
     .search .field {
@@ -3923,27 +4030,72 @@
       margin-top: 24px;
     }
 
-    /* The number, code and signal head each entry, with the title under them and
-      its buttons under that, so every row's signal still falls in one column. */
-    .cols,
-    .job {
-      grid-template-columns: 18px 50px 10px minmax(0, 1fr);
-      gap: 4px 12px;
+    /* The queue's tools take their own line under its name, the menu taking what the buttons leave. */
+    .qhead .right {
+      flex: 1 1 100%;
+      margin-left: 0;
     }
 
-    .cols .entry {
+    /* The menu takes a line of its own, so five tools still fit on the next. */
+    .qhead #after-all {
+      flex: 1 1 100%;
+    }
+
+    /* A tool that is only an icon needs its outline to read as a button. */
+    .qhead .btn.ghost,
+    .composer .go .btn.ghost {
+      flex: none;
+      width: 44px;
+      padding: 0;
+      border-color: var(--edge);
+      color: var(--text);
+    }
+
+    /* The column heads and the legend explain a table a phone does not draw. */
+    .cols {
       display: none;
+    }
+
+    /* The number heads each entry with its buttons beside it, and the title and what
+      happened under them. The signal only draws while something downloads. */
+    .job {
+      grid-template-columns: 18px 50px 10px minmax(0, 1fr) auto;
+      gap: 4px 8px;
+      align-items: start;
+      padding-block: 6px 12px;
+    }
+
+    /* Centred on the first line of 44px buttons, should a row have more than fit on one. */
+    .job .signal {
+      margin-top: 7px;
+    }
+
+    .job:not(.running) .signal {
+      display: none;
+    }
+
+    .job input.pick {
+      margin-top: 15px;
+    }
+
+    .job .no {
+      margin-top: 13px;
+    }
+
+    .job .code {
+      margin-top: 17px;
+    }
+
+    .job .acts {
+      flex-wrap: wrap;
+      grid-row: 1;
+      grid-column: 5;
+      justify-content: flex-end;
     }
 
     .job .body {
       grid-row: 2;
       grid-column: 2 / -1;
-    }
-
-    .job .acts {
-      grid-row: 3;
-      grid-column: 2 / -1;
-      justify-content: flex-end;
     }
 
     .searchbar {
@@ -3957,8 +4109,9 @@
       justify-content: center;
     }
 
+    /* Two across held upright, and as many as fit when the phone is on its side. */
     .results {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
       gap: 16px 12px;
     }
 
@@ -4001,7 +4154,7 @@
     }
 
     .grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       gap: 12px;
     }
 
@@ -4011,24 +4164,41 @@
     }
 
     #history .search {
-      flex: 1;
+      flex: 1 1 100%;
     }
 
+    /* The list's own ink rule closes the strip, so it needs no rule of its own as well. */
+    .stats {
+      margin-bottom: 0;
+      border-bottom: 0;
+    }
+
+    /* As in the queue: the number and its buttons on one line, the picture and words under them. */
     .hist-row {
-      grid-template-columns: 50px 10px 64px minmax(0, 1fr);
-      gap: 4px 12px;
+      grid-template-columns: 50px 10px minmax(0, 1fr) auto;
+      gap: 6px 12px;
+      padding-block: 6px 12px;
+    }
+
+    .hist-row .acts {
+      grid-area: 1 / 4;
+    }
+
+    .hist-row .thumb {
+      grid-area: 2 / 1 / 4 / 3;
+      align-self: start;
+    }
+
+    .hist-row .body {
+      grid-area: 2 / 3 / 3 / 5;
     }
 
     .hist-row .w {
       display: flex;
       flex-wrap: wrap;
-      grid-column: 4;
+      grid-area: 3 / 3 / 4 / 5;
       gap: 0 12px;
       text-align: left;
-    }
-
-    .hist-row .acts {
-      grid-column: 1 / -1;
     }
 
     /* The section index runs off the edge and scrolls sideways rather than wrapping. */
@@ -4170,10 +4340,25 @@
     }
   }
 
-  /* The narrowest phones squeeze the tab names a step further along Archivo's width axis. */
+  /* A phone on its side: the viewer's buttons fit beside its name again, the picture fills
+    the screen under them, and the clip tools scroll up from below it. */
+  @media (height <= 500px) {
+    #lightbox {
+      grid-template-rows: auto calc(100vh - 64px) auto;
+      overflow-y: auto;
+    }
+
+    #lightbox .acts {
+      flex: none;
+      margin-left: auto;
+    }
+  }
+
+  /* The narrowest phones take the tab names down a size, so Downloads still fits beside the red block. */
   @media (width <= 380px) {
     .tab {
-      font-stretch: 75%;
+      font-size: 10px;
+      letter-spacing: 0;
     }
   }
 
