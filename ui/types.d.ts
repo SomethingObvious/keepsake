@@ -69,6 +69,8 @@ interface Settings {
   ugoira: string;
   remove_text: string;
   preview_playback: string;
+  background_play: boolean;
+  media_controls: boolean;
   cookies: string;
   cookie_file: string;
   proxy: string;
@@ -275,6 +277,13 @@ interface GalleryProbe {
 
 type Probe = ProbeFailure | VideoProbe | GalleryProbe;
 
+interface Playlist {
+  id: string;
+  name: string;
+  files: string[];
+  at: number;
+}
+
 interface LibFile {
   path: string;
   serial?: number;
@@ -383,6 +392,10 @@ interface KeepsakeApi {
   afterimage(path: string): Promise<null>;
   open_folder(which: string): Promise<null>;
   subtitles(path: string): Promise<{ label: string; vtt: string }[]>;
+  playlists(): Promise<Playlist[]>;
+  player_art(path: string): Promise<{ picture: string; wave: string }>;
+  save_playlist(playlist: Partial<Playlist>): Promise<Playlist[]>;
+  delete_playlist(id: string): Promise<Playlist[]>;
   plays_everywhere(path: string): Promise<boolean>;
   save_frame(path: string, seconds: number): Promise<string | null>;
   waveform(path: string): Promise<string>;
@@ -412,4 +425,5 @@ interface KeepsakeApi {
 
 interface Window {
   pywebview: { api: KeepsakeApi };
+  keepsakeMedia?: (action: string, value?: number) => Promise<void>;
 }

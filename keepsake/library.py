@@ -1,9 +1,12 @@
 """The download folder as a library, and the archives that remember what is in it."""
 
+import hashlib
 import sqlite3
+import urllib.request
+import uuid
 from pathlib import Path
 
-from keepsake import paths
+from keepsake import APP, paths, store
 from keepsake.links import kind
 
 MOST = 5000  # files the library shows; the newest win
@@ -95,3 +98,50 @@ def forget(path: Path, lines: list[str]) -> int:
             "DELETE FROM archive WHERE entry = ?", [(line,) for line in unwanted]
         )
         return cursor.rowcount
+
+
+def playlists() -> list[dict[str, object]]:
+    """Return the playlists, each a name and its files in order."""
+    return store.load_list(paths.DATA / "playlists.json")
+
+
+def save_playlist(given: object) -> list[dict[str, object]]:
+    """Store one playlist, new or changed, in its place, and return them all."""
+    raw = store.record(given)
+    name, at = raw.get("name"), raw.get("at")
+    entry: dict[str, object] = {
+        "id": str(raw.get("id") or uuid.uuid4().hex[:12]),
+        "name": (name.strip()[:120] if isinstance(name, str) else "") or "Playlist",
+        "files": [path for path in store.items(raw.get("files")) if isinstance(path, str)],
+        "at": at if isinstance(at, int) and not isinstance(at, bool) else 0,
+    }
+    lists = playlists()
+    spot = next((i for i, p in enumerate(lists) if p.get("id") == entry["id"]), len(lists))
+    lists[spot : spot + 1] = [entry]
+    store.save(paths.DATA / "playlists.json", lists)
+    return lists
+
+
+def delete_playlist(playlist_id: str) -> list[dict[str, object]]:
+    """Drop one playlist, leaving its files where they are, and return the rest."""
+    lists = [p for p in playlists() if p.get("id") != playlist_id]
+    store.save(paths.DATA / "playlists.json", lists)
+    return lists
+
+
+def cover(url: str, folder: Path) -> Path | None:
+    """Return a download's own thumbnail, fetched once and kept, for a phone's player."""
+    target = folder / f"{hashlib.sha256(url.encode()).hexdigest()[:24]}.img"
+    if target.is_file():
+        return target
+    if not url.startswith("https://"):
+        return None
+    request = urllib.request.Request(url, headers={"User-Agent": APP})
+    try:
+        with urllib.request.urlopen(request, timeout=10) as reply:
+            data = reply.read(8_000_000)
+    except (OSError, ValueError):
+        return None
+    folder.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
+    return target

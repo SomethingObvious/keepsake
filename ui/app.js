@@ -45,6 +45,11 @@ const ICONS = {
   top: '<path d="M6 17.5 12 11.5l6 6M6 6.5h12"/>',
   bell: '<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  shuffle: '<path d="M4 7.5h3c4.5 0 5.5 9 10 9h3"/><path d="M4 16.5h3c1.6 0 2.7-1.1 3.6-2.6M20 7.5h-3c-1.6 0-2.7 1.1-3.6 2.6"/><path d="M17.5 5 20 7.5 17.5 10M17.5 14 20 16.5 17.5 19"/>',
+  moon: '<path d="M18.5 14.6A7 7 0 0 1 9.4 5.5a7 7 0 1 0 9.1 9.1z"/>',
+  playlist: '<path d="M4 6.5h11M4 11.5h11M4 16.5h6"/><path d="M17.5 13v8M13.5 17h8"/>',
+  grip: '<path d="M8.5 6h1.5v1.5H8.5zM14 6h1.5v1.5H14zM8.5 11.25h1.5v1.5H8.5zM14 11.25h1.5v1.5H14zM8.5 16.5h1.5v1.5H8.5zM14 16.5h1.5v1.5H14z"/>',
+  around: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v3.8h-3.8"/><path d="M10.5 9.5v5l4-2.5z"/>',
   wrench: '<path d="M14.5 5.5a4 4 0 0 0-5 5L4.5 15.5a1.4 1.4 0 0 0 2 2l5-5a4 4 0 0 0 5-5l-2.4 2.4-2-2z"/>',
   scissors: '<circle cx="6.5" cy="7" r="2.5"/><circle cx="6.5" cy="17" r="2.5"/><path d="M8.6 8.5 19.5 17M8.6 15.5 19.5 7"/>',
   eraser: '<path d="M8 19.5 4.6 16.1a1.5 1.5 0 0 1 0-2.1l9-9a1.5 1.5 0 0 1 2.1 0l3.4 3.4a1.5 1.5 0 0 1 0 2.1l-8.9 9zM9.3 9.3l5.4 5.4M11 19.5h8.5"/>',
@@ -244,6 +249,9 @@ const S = {
   libPicking: false,
   libLast: -1,
   libShown: 240,
+  /** The playlists, and the one open in the library, by id. */
+  lists: /** @type {Playlist[]} */ ([]),
+  listOpen: "",
   hist: /** @type {HistoryData | null} */ (null),
   preview: /** @type {PreviewState | null} */ (null),
   logs: new Set(/** @type {string[]} */ ([])),
@@ -2065,7 +2073,7 @@ function bindSubs() {
 let observer = null;
 
 async function loadLibrary() {
-  S.lib = await api().library();
+  [S.lib, S.lists] = await Promise.all([api().library(), api().playlists()]);
   renderLibrary();
 }
 
@@ -2083,6 +2091,18 @@ function libItems() {
 }
 
 function renderLibrary() {
+  const lists = S.libFilter === "lists";
+  for (const el of [$("#grid"), $("#lib-select"), $("#lib-play"), $("#libsort"), $("#library .search")]) {
+    el.hidden = lists;
+  }
+  $("#lists").hidden = !lists;
+  if (lists) {
+    for (const el of [$("#lib-bulk"), $("#libempty"), $("#libmore")]) {
+      el.hidden = true;
+    }
+    renderLists();
+    return;
+  }
   const items = libItems();
   const shown = items.slice(0, S.libShown);
   const total = S.lib.reduce((sum, f) => sum + f.size, 0);
@@ -2242,6 +2262,13 @@ function bindLibrary() {
     renderLibrary();
   });
   on($("#lib-delete"), "click", deletePicked);
+  on($("#lib-play"), "click", () => {
+    const named = /** @type {Record<string, string>} */ ({ video: "Videos", audio: "Sounds" });
+    playFiles(libItems(), named[S.libFilter] ?? "Library", "", undefined, false);
+  });
+  on($("#lib-add"), "click", () => addToList([...S.libPicked]));
+  on($("#lb-add"), "click", () => addToList(current() ? [current()?.path ?? ""] : []));
+  bindLists();
 }
 
 /** Picks or unpicks one file, or with Shift everything from the last one picked. @param {number} index @param {boolean} range */
@@ -2270,6 +2297,7 @@ function paintPicks() {
   $("#lib-bulk").hidden = !S.libPicking && !count;
   $("#lib-bulk-count").textContent = count ? `${String(count)} selected` : "None selected";
   /** @type {HTMLButtonElement} */ ($("#lib-none")).disabled = !count;
+  /** @type {HTMLButtonElement} */ ($("#lib-add")).disabled = !count;
   $("#lib-select").setAttribute("aria-pressed", String(S.libPicking));
   $("#grid").classList.toggle("picking", S.libPicking);
   const pictures = pickedPictures().length;
@@ -2315,28 +2343,499 @@ async function deletePicked() {
   toast(`Moved ${String(moved)} file${moved === 1 ? "" : "s"} to the Recycle Bin${stuck ? `. ${String(stuck)} could not be moved` : ""}`);
 }
 
+/* ============================== playlists ============================== */
+
+/** @param {number} n */
+function fileCount(n) {
+  return `${String(n)} file${n === 1 ? "" : "s"}`;
+}
+
+/** The library's files by path, which is how a playlist names them. */
+function filesByPath() {
+  return new Map(S.lib.map((f) => [f.path, f]));
+}
+
+function renderLists() {
+  const open = S.lists.find((p) => p.id === S.listOpen);
+  $("#lists").innerHTML = open ? listDetail(open) : listOverview();
+}
+
+function listOverview() {
+  const rows = S.lists.map((p) => `<div class="list-row" data-list="${esc(p.id)}">
+    <button type="button" class="list-open" data-l="open">${icon("playlist")}<span class="n">${esc(p.name)}</span><span class="c">${fileCount(p.files.length)}</span></button>
+    <button type="button" class="icon-btn" data-l="play" title="Play" aria-label="Play ${esc(p.name)}"${p.files.length ? "" : " disabled"}>${icon("play")}</button>
+    <button type="button" class="icon-btn" data-l="shuffle" title="Shuffle" aria-label="Shuffle ${esc(p.name)}"${p.files.length ? "" : " disabled"}>${icon("shuffle")}</button></div>`).join("");
+  const empty = '<div class="empty"><strong>No playlists yet</strong><p>Press Select, pick some videos or sounds, then Add to Playlist. A file open in the viewer can be added the same way.</p></div>';
+  return `<div class="lists-head"><button type="button" class="btn" data-l="new">${icon("plus")}New Playlist</button></div>${rows || empty}`;
+}
+
+/** @param {Playlist} p */
+function listDetail(p) {
+  const known = filesByPath();
+  const items = p.files.map((path, i) => {
+    const f = known.get(path);
+    const name = f?.name ?? path.split(/[\\/]/u).pop() ?? path;
+    const code = f ? CODE[f.kind] ?? "c-wait" : "c-wait";
+    return `<div class="list-item${f ? "" : " gone"}${i === p.at && i > 0 ? " left-off" : ""}" data-i="${String(i)}">
+      <button type="button" class="grip" data-l="grip" title="Drag to move it, or use the arrow keys" aria-label="Move ${esc(name)}">${icon("grip")}</button>
+      <span class="no">${String(i + 1).padStart(2, "0")}</span><i class="code ${code}" role="img" aria-label="${f ? CODE_NAME[code] ?? "Not known yet" : "Missing"}"></i>
+      <button type="button" class="list-play" data-l="from"${f ? "" : " disabled"}><span class="n">${esc(name)}</span>${f ? "" : '<span class="m">Not in the library any more</span>'}</button>
+      <button type="button" class="icon-btn" data-l="drop" title="Take it out of the playlist" aria-label="Take ${esc(name)} out">${icon("x")}</button></div>`;
+  }).join("");
+  const none = p.files.length ? "" : " disabled";
+  const resume = p.at > 0 && p.at < p.files.length ? `<button type="button" class="btn" data-l="resume">Carry On from ${String(p.at + 1)}</button>` : "";
+  const empty = '<div class="empty"><strong>Nothing in it yet</strong><p>Pick files in the library with Select and press Add to Playlist, or add the one open in the viewer.</p></div>';
+  return `<div class="list-top">
+      <button type="button" class="btn ghost small" data-l="back">${icon("left")}All Playlists</button>
+      <div class="list-title"><h2 class="list-name">${esc(p.name)}</h2><span class="sub">${fileCount(p.files.length)}</span></div>
+      <div class="list-acts">
+        <button type="button" class="btn primary" data-l="play"${none}>${icon("play")}Play</button>${resume}
+        <button type="button" class="btn" data-l="shuffle"${none}>${icon("shuffle")}Shuffle</button>
+        <button type="button" class="btn ghost" data-l="rename">Rename</button>
+        <button type="button" class="btn ghost danger" data-l="delete">${icon("trash")}<span class="label">Delete</span></button>
+      </div></div>
+    <div class="list-items">${items || empty}</div>`;
+}
+
+/** @param {Playlist} p */
+async function saveList(p) {
+  S.lists = await api().save_playlist(p);
+  renderLists();
+}
+
+/** The first press asks, the second deletes the playlist and leaves its files alone. @param {HTMLElement} button @param {Playlist} p */
+async function deleteList(button, p) {
+  if (!button.classList.contains("confirming")) {
+    button.classList.add("confirming");
+    $(".label", button).textContent = "Delete the Playlist?";
+    window.setTimeout(() => {
+      button.classList.remove("confirming");
+      $(".label", button).textContent = "Delete";
+    }, 3500);
+    return;
+  }
+  S.lists = await api().delete_playlist(p.id);
+  S.listOpen = "";
+  renderLists();
+  toast(`Deleted ${p.name}. Its files are still in the library`);
+}
+
+/** Puts the open playlist in the order its rows are in now. */
+async function reorderList() {
+  const p = S.lists.find((each) => each.id === S.listOpen);
+  const order = $$("#lists .list-item").map((row) => Number(row.dataset["i"]));
+  if (!p || order.every((place, i) => place === i)) {
+    return;
+  }
+  await saveList({ ...p, files: order.flatMap((i) => p.files[i] ?? []), at: Math.max(0, order.indexOf(p.at)) });
+}
+
+/** @param {Playlist} p @param {number} from where in the playlist to start, or below 0 for anywhere @param {boolean} shuffle */
+function playList(p, from, shuffle) {
+  const known = filesByPath();
+  playFiles(p.files.flatMap((path) => known.get(path) ?? []), p.name, p.id, known.get(p.files[from] ?? ""), shuffle);
+}
+
+/** A playlist remembers the file it was left on, to carry on from there. @param {LibFile} f */
+function rememberListPlace(f) {
+  const p = S.lists.find((each) => each.id === box.listId);
+  const at = p ? p.files.indexOf(f.path) : -1;
+  if (p && at >= 0 && at !== p.at) {
+    p.at = at;
+    api().save_playlist(p).then((lists) => {
+      S.lists = lists;
+    }).catch(report);
+  }
+}
+
+/** Asks which playlist, or a new one, and adds the videos and sounds among these files to it. @param {string[]} paths */
+async function addToList(paths) {
+  const known = filesByPath();
+  const playable = paths.filter((path) => known.get(path)?.kind !== "image");
+  if (!playable.length) {
+    toast("Pictures do not go in playlists, only videos and sounds");
+    return;
+  }
+  const dialog = /** @type {HTMLDialogElement} */ ($("#pick-list"));
+  $("#list-choices").innerHTML = S.lists.map((p) => `<button type="submit" class="list-choice" value="${esc(p.id)}">${icon("playlist")}<span class="n">${esc(p.name)}</span><span class="c">${fileCount(p.files.length)}</span></button>`).join("");
+  $("#list-choices").hidden = !S.lists.length;
+  /** @type {HTMLInputElement} */ ($("#new-list-name")).value = "";
+  dialog.returnValue = "";
+  dialog.showModal();
+  const chosen = await new Promise((/** @type {(value: string) => void} */ resolve) => {
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue);
+    }, { once: true });
+  });
+  const named = /** @type {HTMLInputElement} */ ($("#new-list-name")).value.trim();
+  if (chosen === "new" && named) {
+    S.lists = await api().save_playlist({ name: named, files: [] });
+  }
+  const p = chosen === "new" ? S.lists.at(-1) : S.lists.find((each) => each.id === chosen);
+  if (!p || (chosen === "new" && !named)) {
+    return;
+  }
+  const fresh = playable.filter((path) => !p.files.includes(path));
+  S.lists = await api().save_playlist({ ...p, files: [...p.files, ...fresh] });
+  if (S.libFilter === "lists") {
+    renderLists();
+  }
+  const left = paths.length - playable.length;
+  const pictures = left ? `. ${String(left)} picture${left === 1 ? "" : "s"} stayed out` : "";
+  toast(fresh.length ? `Added ${fileCount(fresh.length)} to ${p.name}${pictures}` : `Already in ${p.name}${pictures}`);
+}
+
+function bindLists() {
+  const panel = $("#lists");
+  on(panel, "click", async (event) => {
+    const button = event.target instanceof Element ? event.target.closest("[data-l]") : null;
+    if (!(button instanceof HTMLElement)) {
+      return;
+    }
+    const row = button.closest("[data-list]");
+    const id = row instanceof HTMLElement ? row.dataset["list"] ?? "" : S.listOpen;
+    const p = S.lists.find((each) => each.id === id);
+    const index = Number(button.closest(".list-item")?.getAttribute("data-i") ?? "-1");
+    const act = button.dataset["l"] ?? "";
+    if (act === "new") {
+      const name = await ask("Name the new playlist");
+      if (name) {
+        S.lists = await api().save_playlist({ name, files: [] });
+        S.listOpen = S.lists.at(-1)?.id ?? "";
+        renderLists();
+      }
+      return;
+    }
+    if (act === "open" || act === "back") {
+      S.listOpen = act === "open" ? id : "";
+      renderLists();
+      return;
+    }
+    if (!p) {
+      return;
+    }
+    if (["play", "shuffle", "from", "resume"].includes(act)) {
+      playList(p, act === "from" ? index : act === "resume" ? p.at : act === "shuffle" ? -1 : 0, act === "shuffle");
+    } else if (act === "rename") {
+      const name = await ask("Rename the playlist", p.name);
+      if (name) {
+        await saveList({ ...p, name });
+      }
+    } else if (act === "delete") {
+      await deleteList(button, p);
+    } else if (act === "drop") {
+      await saveList({ ...p, files: p.files.filter((_, i) => i !== index), at: index < p.at ? p.at - 1 : p.at });
+    }
+  });
+  // A row follows the finger or pointer by its grip, and the arrow keys move it a place at a time.
+  on(panel, "pointerdown", (event) => {
+    const grip = event.target instanceof Element ? event.target.closest(".grip") : null;
+    const row = grip?.closest(".list-item");
+    if (!(grip instanceof HTMLElement) || !(row instanceof HTMLElement)) {
+      return;
+    }
+    event.preventDefault();
+    grip.setPointerCapture(event.pointerId);
+    row.classList.add("lifted");
+    const track = (/** @type {PointerEvent} */ moved) => {
+      const under = document.elementFromPoint(moved.clientX, moved.clientY)?.closest(".list-item");
+      if (under instanceof HTMLElement && under !== row) {
+        const edges = under.getBoundingClientRect();
+        under.insertAdjacentElement(moved.clientY > edges.top + edges.height / 2 ? "afterend" : "beforebegin", row);
+      }
+    };
+    const drop = () => {
+      grip.removeEventListener("pointermove", track);
+      grip.removeEventListener("pointerup", drop);
+      grip.removeEventListener("pointercancel", drop);
+      row.classList.remove("lifted");
+      reorderList().catch(report);
+    };
+    grip.addEventListener("pointermove", track);
+    grip.addEventListener("pointerup", drop);
+    grip.addEventListener("pointercancel", drop);
+  });
+  on(panel, "keydown", async (event) => {
+    const grip = event.target instanceof Element ? event.target.closest(".grip") : null;
+    const row = grip?.closest(".list-item");
+    const up = event.key === "ArrowUp";
+    if (!(row instanceof HTMLElement) || (!up && event.key !== "ArrowDown")) {
+      return;
+    }
+    event.preventDefault();
+    const other = up ? row.previousElementSibling : row.nextElementSibling;
+    if (!other) {
+      return;
+    }
+    other.insertAdjacentElement(up ? "beforebegin" : "afterend", row);
+    const at = $$("#lists .list-item").indexOf(row);
+    await reorderList();
+    $$("#lists .grip")[at]?.focus();
+  });
+  // Enter in the name box makes the new playlist, rather than picking the first one listed.
+  on($("#new-list-name"), "keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      /** @type {HTMLDialogElement} */ ($("#pick-list")).close("new");
+    }
+  });
+}
+
+/* ============================== playing in order ============================== */
+
+/**
+ * Plays files one after another in the viewer: a playlist, or everything the library shows.
+ * @param {LibFile[]} files
+ * @param {string} name
+ * @param {string} id the playlist's, empty for the library
+ * @param {LibFile | undefined} first
+ * @param {boolean} shuffle
+ */
+function playFiles(files, name, id, first, shuffle) {
+  const playable = files.filter((f) => f.kind !== "image");
+  const start = first && playable.includes(first) ? first : playable[shuffle ? Math.floor(Math.random() * playable.length) : 0];
+  if (!start) {
+    toast("There is nothing here to play. Pictures do not play");
+    return;
+  }
+  leavePlayer();
+  Object.assign(box, { source: playable, listId: id, listName: name, keep: { next: true, around: playerPrefs().around }, start: 0, end: 0 });
+  deck.shuffle = shuffle;
+  box.list = shuffle ? shuffled(playable, start) : playable;
+  box.i = box.list.indexOf(start);
+  paintBox();
+  $("#lightbox").hidden = false;
+}
+
+/** The files in a random order, this one first. @param {LibFile[]} files @param {LibFile} first */
+function shuffled(files, first) {
+  const rest = files.filter((f) => f !== first);
+  for (let i = rest.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [/** @type {LibFile} */ (rest[j]), /** @type {LibFile} */ (rest[i])];
+  }
+  return [first, ...rest];
+}
+
+/** Shuffles what is left of the list, or puts it back in order, from the file playing now. */
+function toggleShuffle() {
+  const f = current();
+  if (!f || !box.keep) {
+    return;
+  }
+  deck.shuffle = !deck.shuffle;
+  box.list = deck.shuffle ? shuffled(box.source, f) : box.source;
+  box.i = box.list.indexOf(f);
+  paintMeta(f);
+  paintNav();
+  paintControls();
+  announcePlayback();
+  toast(deck.shuffle ? "Shuffled: the rest play in a random order" : "Back in order");
+}
+
+/** Stop at the end, play the next one, or play the next one and start over after the last. */
+function cycleAfter() {
+  [deck.next, deck.around] = deck.around ? [false, false] : deck.next ? [true, true] : [true, false];
+  if (box.keep) {
+    Object.assign(box.keep, { next: deck.next, around: deck.around });
+  }
+  savePlayerPrefs(box.keep ? { around: deck.around } : { next: deck.next, around: deck.around });
+  paintControls();
+  announcePlayback();
+  toast(deck.around ? "Plays the next one, and starts over after the last" : deck.next ? "The next one plays when this ends" : "Stops at the end of this one");
+}
+
+/** Minutes the sleep timer can run, and below 0 for the end of the file playing. */
+const SLEEPS = [0, 15, 30, 60, -1];
+
+function cycleSleep() {
+  deck.sleep = SLEEPS[(SLEEPS.indexOf(deck.sleep) + 1) % SLEEPS.length] ?? 0;
+  window.clearTimeout(deck.sleepTimer);
+  deck.sleepAt = deck.sleep > 0 ? Date.now() + deck.sleep * 60_000 : 0;
+  if (deck.sleep > 0) {
+    deck.sleepTimer = window.setTimeout(fallAsleep, deck.sleep * 60_000);
+  }
+  paintControls();
+  toast(deck.sleep > 0 ? `Stops in ${String(deck.sleep)} minutes` : deck.sleep < 0 ? "Stops at the end of this one" : "Sleep timer off");
+}
+
+/** The sleep timer's end: the sound fades out over a few seconds rather than cutting off. */
+function fallAsleep() {
+  const media = player();
+  Object.assign(deck, { sleep: 0, sleepAt: 0 });
+  paintControls();
+  if (!media || media.paused) {
+    return;
+  }
+  const loud = media.volume;
+  deck.fading = true;
+  const fade = window.setInterval(() => {
+    media.volume = Math.max(0, media.volume - loud / 30);
+    if (media.volume <= 0) {
+      window.clearInterval(fade);
+      pauseNow(media);
+      media.volume = loud;
+      deck.fading = false;
+      toast("The sleep timer stopped it");
+    }
+  }, 200);
+}
+
+/** A pause the viewer itself asks for, which is meant to last until play is pressed. @param {HTMLMediaElement} media */
+function pauseNow(media) {
+  deck.wanted = false;
+  media.pause();
+}
+
+/** Plays the file again from where it is, as sound alone or with its picture. @param {boolean} bare */
+function restage(bare) {
+  box.resume = { time: player()?.currentTime ?? 0, play: deck.wanted };
+  deck.soundOnly = bare;
+  leavePlayer();
+  paintBox();
+}
+
+// Out of sight Android stops a video, though not a sound, so the viewer carries on with the
+// file's sound alone from the same moment and brings the picture back on return.
+document.addEventListener("visibilitychange", () => {
+  const media = player();
+  const f = current();
+  if (!media || !f || $("#lightbox").hidden) {
+    return;
+  }
+  if (document.hidden && !S.settings.background_play) {
+    pauseNow(media);
+  } else if (document.hidden && deck.wanted && f.kind === "video" && document.documentElement.dataset["platform"] === "android") {
+    restage(true);
+  } else if (!document.hidden && deck.soundOnly) {
+    restage(false);
+  }
+});
+
+/** The viewer's playback, for a phone's notification bar and lock screen, or null when it is closed. */
+function mediaState() {
+  const media = player();
+  const f = current();
+  if (!media || !f || $("#lightbox").hidden) {
+    return null;
+  }
+  return {
+    playing: deck.wanted,
+    title: f.name.replace(/\.[^.]+$/u, ""),
+    path: f.path,
+    kind: f.kind,
+    serial: f.serial ?? 0,
+    picture: box.art?.path === f.path ? box.art.picture : "",
+    wave: box.art?.path === f.path ? box.art.wave : "",
+    list: box.listName,
+    index: box.i,
+    count: box.list.length,
+    position: media.currentTime,
+    duration: Number.isFinite(media.duration) ? media.duration : 0,
+    rate: media.playbackRate,
+    shuffle: deck.shuffle,
+    canShuffle: box.keep !== null,
+    after: deck.around ? "around" : deck.next ? "next" : "stop",
+    background: S.settings.background_play,
+    controls: S.settings.media_controls,
+  };
+}
+
+function announcePlayback() {
+  document.dispatchEvent(new CustomEvent("keepsake:media", { detail: mediaState() }));
+}
+
+/**
+ * What a phone's notification, lock screen and headphone buttons ask of the viewer.
+ * @param {string} action play, pause, next, previous, seek, shuffle, repeat or stop
+ * @param {number} [value] seconds, for seek
+ */
+async function mediaAction(action, value = 0) {
+  const media = player();
+  if (action === "stop") {
+    closeBox();
+  } else if (!media) {
+    announcePlayback();
+  } else if (action === "play") {
+    deck.wanted = true;
+    await media.play();
+  } else if (action === "pause") {
+    pauseNow(media);
+  } else if (action === "next") {
+    playNext(true);
+  } else if (action === "previous" && (media.currentTime > 3 || box.i === 0)) {
+    media.currentTime = 0;
+  } else if (action === "previous") {
+    stepBox(-1);
+  } else if (action === "seek") {
+    media.currentTime = value;
+  } else if (action === "shuffle") {
+    toggleShuffle();
+  } else if (action === "repeat") {
+    cycleAfter();
+  }
+}
+
+// The phone app calls this for the buttons in its notification bar and on the lock screen.
+window.keepsakeMedia = mediaAction;
+
 /* ============================== viewer ============================== */
 
-const box = { i: -1, list: /** @type {LibFile[]} */ ([]), start: 0, end: 0 };
+const box = {
+  i: -1,
+  /** The files in the order they play, and in their own order before any shuffle. */
+  list: /** @type {LibFile[]} */ ([]),
+  source: /** @type {LibFile[]} */ ([]),
+  start: 0,
+  end: 0,
+  /** The playlist playing, and whether it carries on: kept for the session, not saved like the library's. */
+  listId: "",
+  listName: "",
+  keep: /** @type {{ next: boolean, around: boolean } | null} */ (null),
+  /** Where the next player starts, when one file is played again as sound alone or with its picture. */
+  resume: /** @type {{ time: number, play: boolean } | null} */ (null),
+  /** The pictures a phone's player shows for the file playing. */
+  art: /** @type {{ path: string, picture: string, wave: string } | null} */ (null),
+};
 
 /** @param {number} index */
 function openBox(index) {
   box.i = index;
   box.list = libItems();
+  box.source = box.list;
   box.start = 0;
   box.end = 0;
+  Object.assign(box, { listId: "", listName: "", keep: null });
+  deck.shuffle = false;
   paintBox();
   $("#lightbox").hidden = false;
 }
 
 function closeBox() {
   leavePlayer();
+  window.clearTimeout(deck.sleepTimer);
+  Object.assign(deck, { sleep: 0, sleepAt: 0, soundOnly: false, wanted: false, shuffle: false });
+  Object.assign(box, { listId: "", listName: "", keep: null });
   $("#lightbox").hidden = true;
   $("#lb-stage").innerHTML = "";
+  announcePlayback();
 }
 
 function current() {
   return box.list[box.i];
+}
+
+/** @param {LibFile} f */
+function paintMeta(f) {
+  const where = `${String(box.i + 1)} of ${String(box.list.length)}`;
+  // In a playlist its name and the place in it come first, as the line is cut short on a narrow window.
+  const facts = box.listName ? [box.listName, where, bytes(f.size), ago(f.time)] : [f.folder === "." ? "" : f.folder, bytes(f.size), ago(f.time), where];
+  $("#lb-meta").textContent = facts.filter(Boolean).join(", ");
+}
+
+function paintNav() {
+  $("#lb-stage .nav.prev").hidden = box.i <= 0;
+  $("#lb-stage .nav.next").hidden = box.i >= box.list.length - 1;
 }
 
 function paintBox() {
@@ -2349,13 +2848,25 @@ function paintBox() {
   $("#lb-name").textContent = f.name;
   $("#lb-no").textContent = f.serial ? String(f.serial).padStart(4, "0") : "";
   $("#lb-code").className = `code ${CODE[f.kind] ?? "c-wait"}`;
-  $("#lb-meta").textContent = [f.folder === "." ? "" : f.folder, bytes(f.size), ago(f.time), `${String(box.i + 1)} of ${String(box.list.length)}`].filter(Boolean).join(", ");
+  paintMeta(f);
   const media = f.kind === "image" ? `<img src="${esc(f.uri)}" alt="">` : playerMarkup(f);
   $("#lb-stage").innerHTML = `${media}<button type="button" class="icon-btn nav prev" title="Previous (Left)" aria-label="Previous" ${box.i ? "" : "hidden"}>${icon("left")}</button><button type="button" class="icon-btn nav next" title="Next (Right)" aria-label="Next" ${box.i < box.list.length - 1 ? "" : "hidden"}>${icon("right")}</button>`;
   if (f.kind !== "image") {
     setupPlayer(f);
   }
   $("#lb-after").hidden = !(S.afterimage && f.kind === "video");
+  $("#lb-add").hidden = f.kind === "image";
+  if (box.listId) {
+    rememberListPlace(f);
+  }
+  if (f.kind !== "image" && document.documentElement.dataset["platform"] === "android" && box.art?.path !== f.path) {
+    api().player_art(f.path).then((art) => {
+      if (current() === f) {
+        box.art = { path: f.path, ...art };
+        announcePlayback();
+      }
+    }).catch(report);
+  }
   $("#lb-playable").hidden = true;
   if (f.kind === "video") {
     api().plays_everywhere(f.path).then((fine) => {
@@ -2881,6 +3392,18 @@ const PLAYER_PREFS = "keepsake.player";
 const deck = {
   loop: false,
   next: false,
+  /** After the last file, back to the first. */
+  around: false,
+  shuffle: false,
+  /** Minutes the sleep timer was set for, below 0 for the end of the file, and when it runs out. */
+  sleep: 0,
+  sleepAt: 0,
+  /** @type {number | undefined} */
+  sleepTimer: undefined,
+  fading: false,
+  /** Playing a video's sound alone while out of sight, and whether playing is what was asked for. */
+  soundOnly: false,
+  wanted: false,
   remaining: false,
   fps: 30,
   track: -1,
@@ -2898,13 +3421,14 @@ const deck = {
  * @property {boolean} muted
  * @property {number} speed
  * @property {boolean} next
+ * @property {boolean} around
  * @property {Record<string, number>} at where each file was left off
  */
 
 /** @returns {PlayerPrefs} what the player remembers, if this window may keep anything */
 function playerPrefs() {
   /** @type {PlayerPrefs} */
-  const prefs = { volume: 1, muted: false, speed: 1, next: false, at: {} };
+  const prefs = { volume: 1, muted: false, speed: 1, next: false, around: false, at: {} };
   try {
     // Saved under the app's old name until 1.14, and kept so the volume and speed carry over.
     const kept = localStorage.getItem(PLAYER_PREFS) ?? localStorage.getItem("siphon.player");
@@ -2920,6 +3444,7 @@ function playerPrefs() {
     }
     prefs.muted = s["muted"] === true;
     prefs.next = s["next"] === true;
+    prefs.around = s["around"] === true;
     const at = s["at"];
     if (at && typeof at === "object") {
       for (const [path, time] of Object.entries(at)) {
@@ -2949,7 +3474,7 @@ function marked() {
 
 /** @param {LibFile} f */
 function playerMarkup(f) {
-  const video = f.kind === "video";
+  const video = f.kind === "video" && !deck.soundOnly;
   /** @param {string} act @param {string} name @param {string} label @param {string} [extra] */
   const pb = (act, name, label, extra = "") => `<button type="button" class="icon-btn" data-p="${act}" title="${esc(label)}" aria-label="${esc(label)}" ${extra}>${icon(name)}</button>`;
   const media = video
@@ -2973,6 +3498,8 @@ function playerMarkup(f) {
         <button type="button" class="speed" data-p="speed" title="Speed (&lt; and &gt;)" aria-label="Speed">1×</button>
         ${pb("loop", "loop", "Loop (R): the marked part, or all of it", 'aria-pressed="false"')}
         ${pb("next", "skip", "Play the next one when this ends", 'aria-pressed="false"')}
+        ${pb("shuffle", "shuffle", "Shuffle the rest", 'aria-pressed="false" hidden')}
+        <button type="button" class="icon-btn sleep" data-p="sleep" title="Sleep timer" aria-label="Sleep timer" aria-pressed="false">${icon("moon")}<b class="sleep-left"></b></button>
         ${pictureOnly}
       </div>
     </div></div>`;
@@ -2990,24 +3517,41 @@ function setupPlayer(f) {
   media.muted = prefs.muted;
   media.playbackRate = prefs.speed;
   media.loop = deck.loop && !marked();
-  Object.assign(deck, { next: prefs.next, tracks: [], track: -1, fps: 30 });
+  const resume = box.resume;
+  box.resume = null;
+  if (resume && !resume.play) {
+    media.autoplay = false;
+  }
+  const keep = box.keep ?? prefs;
+  Object.assign(deck, { next: keep.next, around: keep.around, tracks: [], track: -1, fps: 30 });
   on(media, "loadedmetadata", () => {
     const left = prefs.at[f.path];
-    if (left !== undefined && left < media.duration - 5) {
+    if (resume) {
+      media.currentTime = resume.time;
+    } else if (left !== undefined && left < media.duration - 5) {
       media.currentTime = left;
       toast(`Carrying on from ${dur(left)}`);
     }
     paintControls();
+    announcePlayback();
   });
   for (const type of /** @type {const} */ (["timeupdate", "progress", "durationchange"])) {
     on(media, type, paintControls);
   }
   on(media, "play", () => {
+    deck.wanted = true;
+    announcePlayback();
     paintControls();
     flash("play");
     wake(root, media);
   });
   on(media, "pause", () => {
+    // Android pauses a hidden video by itself, which is not the listener asking for it. A sound
+    // playing out of sight is never paused that way, so a call or another app's music stops it for real.
+    if (!document.hidden || deck.soundOnly) {
+      deck.wanted = false;
+    }
+    announcePlayback();
     paintControls();
     flash("pause");
     root.classList.remove("idle");
@@ -3024,16 +3568,25 @@ function setupPlayer(f) {
   keepToSpan(media, box, () => deck.loop);
   on(media, "ended", () => {
     rememberPosition();
-    if (deck.next) {
-      playNext();
+    if (deck.sleep < 0) {
+      Object.assign(deck, { sleep: 0, wanted: false });
+      paintControls();
+      toast("The sleep timer stopped it at the end");
+    } else if (!deck.next || !playNext(deck.around)) {
+      deck.wanted = false;
     }
+    announcePlayback();
   });
+  on(media, "seeked", announcePlayback);
   on(media, "volumechange", () => {
     paintControls();
-    savePlayerPrefs({ volume: media.volume, muted: media.muted });
+    if (!deck.fading) {
+      savePlayerPrefs({ volume: media.volume, muted: media.muted });
+    }
   });
   on(media, "ratechange", () => {
     paintControls();
+    announcePlayback();
     savePlayerPrefs({ speed: media.playbackRate });
   });
   on(media, "error", () => {
@@ -3119,10 +3672,13 @@ async function controlClick(event, root, media, f) {
       toggleLoop(media);
       break;
     case "next":
-      deck.next = !deck.next;
-      savePlayerPrefs({ next: deck.next });
-      paintControls();
-      toast(deck.next ? "The next one plays when this ends" : "Stops at the end");
+      cycleAfter();
+      break;
+    case "shuffle":
+      toggleShuffle();
+      break;
+    case "sleep":
+      cycleSleep();
       break;
     case "frame":
       await saveFrame(f, media);
@@ -3413,6 +3969,15 @@ function paintControls() {
   $("[data-p='speed']", root).textContent = `${String(media.playbackRate)}×`;
   $("[data-p='loop']", root).setAttribute("aria-pressed", String(deck.loop));
   $("[data-p='next']", root).setAttribute("aria-pressed", String(deck.next));
+  paintButton(root, "next", deck.around ? "around" : "skip", deck.around ? "Plays the next one, and starts over after the last" : deck.next ? "Plays the next one when this ends" : "Stops at the end of this one");
+  const mix = $("[data-p='shuffle']", root);
+  mix.hidden = !box.keep;
+  mix.setAttribute("aria-pressed", String(deck.shuffle));
+  const sleep = $("[data-p='sleep']", root);
+  const left = deck.sleep > 0 ? Math.max(1, Math.ceil((deck.sleepAt - Date.now()) / 60_000)) : 0;
+  sleep.setAttribute("aria-pressed", String(deck.sleep !== 0));
+  sleep.title = deck.sleep > 0 ? `Sleep timer: stops in ${String(left)} min` : deck.sleep < 0 ? "Sleep timer: stops at the end of this one" : "Sleep timer";
+  $(".sleep-left", sleep).textContent = deck.sleep > 0 ? String(left) : deck.sleep < 0 ? "end" : "";
   const subs = $("[data-p='subs']", root);
   subs.hidden = !deck.tracks.length;
   subs.setAttribute("aria-pressed", String(deck.track >= 0));
@@ -3459,12 +4024,23 @@ function leavePlayer() {
   deck.urls = [];
 }
 
-function playNext() {
+/** Moves on to the next file that plays, round to the first if asked, and says whether there was one. @param {boolean} wrap */
+function playNext(wrap) {
   const kind = current()?.kind;
-  const next = box.list.findIndex((f, index) => index > box.i && f.kind === kind);
-  if (next >= 0) {
+  /** In a list anything that plays is next, and in the library the next of the same kind. @param {LibFile} f */
+  const fits = (f) => f.kind !== "image" && (box.keep !== null || f.kind === kind);
+  let next = box.list.findIndex((f, index) => index > box.i && fits(f));
+  if (next < 0 && wrap) {
+    next = box.list.findIndex(fits);
+  }
+  const media = player();
+  if (next === box.i && media) {
+    media.currentTime = 0;
+    media.play().catch(report);
+  } else if (next >= 0) {
     stepBox(next - box.i);
   }
+  return next >= 0;
 }
 
 /** @type {number | undefined} */

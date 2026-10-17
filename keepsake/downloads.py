@@ -98,6 +98,12 @@ class History:
             None,
         )
 
+    def thumb_for(self, path: str) -> str:
+        """Return the thumbnail of the download that made a file, or ""."""
+        found = next((e for e in self.entries if path in store.items(e.get("files"))), None)
+        thumb = found.get("thumb") if found else None
+        return thumb if isinstance(thumb, str) else ""
+
     def keys_for(self, path: Path) -> list[str]:
         """Return the archive lines of the download that wrote this file."""
         target = os.path.normcase(str(path))
