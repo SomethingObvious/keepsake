@@ -175,7 +175,7 @@
     --surface-2: #121212;
     --surface-3: #1a1a1a;
     --border: #2f2f2e;
-    --edge: #4a4a47;
+    --edge: #62615d;
     --mat: #050505;
     --row-line: #1d1d1c;
     --ink: #ecebe6;
@@ -218,7 +218,10 @@
     overflow: clip;
   }
 
+  /* Positioned so the screen-reader labels are clipped with the window. Otherwise they stretch
+    the document past it, and bringing anything into view scrolls the title bar away. */
   body {
+    position: relative;
     display: grid;
     grid-template-rows: var(--bar) minmax(0, 1fr);
     grid-template-columns: 224px 1fr;
@@ -1077,7 +1080,7 @@
 
   .empty p {
     max-width: 620px;
-    margin: 0 auto;
+    margin: 0;
   }
 
   .empty .keys-hint {
@@ -1242,7 +1245,7 @@
     height: 12px;
   }
 
-  .group.open .chev {
+  .fold[aria-expanded="true"] .chev {
     transform: rotate(90deg);
   }
 
@@ -1505,9 +1508,7 @@
   }
 
   .table-wrap {
-    overscroll-behavior: contain;
-    max-height: 280px;
-    overflow: auto;
+    overflow-x: auto;
     border-top: 1px solid var(--border);
   }
 
@@ -1573,9 +1574,14 @@
     text-transform: uppercase;
   }
 
+  .section-title.fold {
+    height: auto;
+    padding-bottom: 12px;
+  }
+
   /* What to do with the section, as a sentence, so it stays out of the capitals. */
   .section-title .hint {
-    margin-left: 12px;
+    margin: 0 0 0 12px;
     font: 12px var(--sans);
     letter-spacing: normal;
     text-transform: none;
@@ -1727,8 +1733,8 @@
   /* Below this the queue's tools fold to their icons, so they stay on one line. */
   @media (width < 1100px) {
     .qhead .btn .label,
-    #library .head .btn .label,
-    #lightbox .acts .btn .label {
+    #lightbox .acts .btn .label,
+    #library .head .btn:last-child .label {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -1979,10 +1985,11 @@
 
   .bar i {
     display: block;
-    width: 0;
     height: 100%;
     background: var(--ink);
-    transition: width 0.35s var(--ease);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s var(--ease);
   }
 
   .job:not(.running) .bar {
@@ -2695,7 +2702,8 @@
   }
 
   /* A folder is one line in its own case, losing its start rather than the folder's name. */
-  .setting .h[data-folder-show] {
+  .setting .h[data-folder-show],
+  #data-show {
     overflow: hidden;
     direction: rtl;
     font: 12px var(--mono);
@@ -3957,23 +3965,10 @@
       font-size: 24px;
     }
 
-    /* The page's own buttons take their own line under its name, with their words back. */
+    /* The page's own buttons take their own line under its name. */
     .head .right {
       flex: 1 1 100%;
       margin-left: 0;
-    }
-
-    #library .head .btn .label {
-      position: static;
-      width: auto;
-      height: auto;
-      overflow: visible;
-      clip-path: none;
-    }
-
-    /* Refresh is the last of them, and its arrow says it alone. */
-    #library .head .btn:last-child .label {
-      display: none;
     }
 
     .search .field {

@@ -382,6 +382,7 @@ interface KeepsakeApi {
   afterimage(path: string): Promise<null>;
   open_folder(which: string): Promise<null>;
   subtitles(path: string): Promise<{ label: string; vtt: string }[]>;
+  plays_everywhere(path: string): Promise<boolean>;
   save_frame(path: string, seconds: number): Promise<string | null>;
   waveform(path: string): Promise<string>;
   thumbnail(path: string): Promise<string>;

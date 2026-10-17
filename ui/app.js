@@ -121,7 +121,7 @@ function dur(seconds) {
   if (seconds === null || seconds === undefined || Number.isNaN(seconds)) {
     return "";
   }
-  const s = Math.round(seconds);
+  const s = Math.floor(seconds);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const pad = (/** @type {number} */ v) => String(v).padStart(2, "0");
@@ -264,8 +264,12 @@ const S = {
  * @property {string} rename
  * @property {string} folder
  * @property {{ start: number, end: number }} span the part to download, both 0 for all of it
+ * @property {boolean} formats whether the formats table is unfolded
  * @property {{ watch: HTMLElement | null, bar: HTMLElement } | null} clip the player and clip bar, made once and kept across redraws
  */
+
+/** The four download folders, which All in One Place sets together. */
+const FOLDER_KEYS = /** @type {SettingKey[]} */ (["folder", "audio_folder", "picture_folder", "text_folder"]);
 
 const DRAWER = /** @type {SettingKey[]} */ ([
   "container", "codec", "always_plays", "prefer_sdr", "subs", "sub_langs", "auto_subs", "audio_lang", "strip_metadata",
@@ -402,6 +406,13 @@ function paintSettings() {
   const preset = $("#template-preset", document);
   if (preset instanceof HTMLSelectElement) {
     preset.value = [...preset.options].some((o) => o.value === S.settings.template) ? S.settings.template : "";
+    $("#template-row").hidden = Boolean(preset.value);
+  }
+  const spots = FOLDER_KEYS.map((key) => S.settings[key]);
+  const where = spots.every((spot) => spot === spots[0]) ? "downloads" : FOLDER_KEYS.every((key) => S.settings[key] === S.defaults[key]) ? "own" : "";
+  for (const button of $$("[data-folders]")) {
+    button.classList.toggle("on", button.dataset["folders"] === where);
+    button.setAttribute("aria-pressed", String(button.dataset["folders"] === where));
   }
   $("#cookie-file-row").hidden = S.settings.cookies !== "file";
   $("#cookie-file-show").textContent = S.settings.cookie_file || "None chosen";
@@ -465,7 +476,7 @@ let forgetTimer;
 function disarmForget() {
   const button = $("#detext-forget");
   button.classList.remove("confirming");
-  button.textContent = "Remove It";
+  button.textContent = "Uninstall";
   window.clearTimeout(forgetTimer);
 }
 
@@ -479,6 +490,9 @@ async function setUpTextRemoval(tier) {
 }
 
 function bindTextRemoval() {
+  on($("#show-keys"), "click", () => {
+    /** @type {HTMLDialogElement} */ ($("#help")).showModal();
+  });
   on($("#detext-quick"), "click", () => setUpTextRemoval("quick"));
   on($("#detext-best"), "click", () => setUpTextRemoval("best"));
   on($("#detext-forget"), "click", async () => {
@@ -492,7 +506,7 @@ function bindTextRemoval() {
     disarmForget();
     S.textRemoval = await api().forget_text_removal();
     paintTextRemoval();
-    toast(textRemovalReady() ? "It is being set up: try again when that is done" : "Removed");
+    toast(textRemovalReady() ? "It is being set up: try again when that is done" : "Uninstalled");
   });
   on($("#lb-detext"), "click", removeTextHere);
   on($("#lib-detext"), "click", removeTextFromPicked);
@@ -575,6 +589,7 @@ function bindSettings() {
     if (preset instanceof HTMLSelectElement && preset.value) {
       save("template", preset.value);
     } else {
+      $("#template-row").hidden = false;
       $("#template").focus();
     }
   });
@@ -694,7 +709,7 @@ async function preview(given, clip = false) {
     return;
   }
   show("downloads");
-  S.preview = { url, loading: true, probe: null, spec: "", picked: null, chapters: new Set(), rename: "", folder: "", span: { start: 0, end: 0 }, clip: null };
+  S.preview = { url, loading: true, probe: null, spec: "", picked: null, chapters: new Set(), rename: "", folder: "", span: { start: 0, end: 0 }, formats: false, clip: null };
   renderPreview();
   const probe = await api().probe(url, S.settings.mode);
   const still = openPreview();
@@ -828,8 +843,11 @@ function previewBody(p, probe) {
       <span class="n">${String(i + 1)}</span><span class="d">${esc(dur(c.start))}</span><span class="t">${esc(c.title)}</span></label>`).join("")}</div>`;
   }
   if (probe.formats.length) {
+    body += `<button type="button" class="section-title fold" data-pv="formats" aria-expanded="${String(p.formats)}"><span class="chev">${icon("right")}</span><span>Formats</span><span class="hint">${p.spec ? "One picked" : `${String(probe.formats.length)} to pick from, or let the options above decide`}</span></button>`;
+  }
+  if (probe.formats.length && p.formats) {
     const automatic = S.settings.mode === "audio" ? "best audio" : S.settings.quality === "best" ? "best quality" : `${S.settings.quality}p at most`;
-    body += `<div class="section-title">Formats</div><div class="table-wrap"><table class="formats"><thead><tr><th>ID</th><th>Ext</th><th>Resolution</th><th>FPS</th><th>Video</th><th>Audio</th><th>Lang</th><th class="r">Size</th><th class="r">Bitrate</th><th>Note</th></tr></thead><tbody>
+    body += `<div class="table-wrap"><table class="formats"><thead><tr><th>ID</th><th>Ext</th><th>Resolution</th><th>FPS</th><th>Video</th><th>Audio</th><th>Lang</th><th class="r">Size</th><th class="r">Bitrate</th><th>Note</th></tr></thead><tbody>
       <tr data-spec="" class="${p.spec ? "" : "on"}"><td colspan="10" class="auto">Automatic: the options above decide (${esc(automatic)})</td></tr>
       ${probe.formats.map((f) => `<tr data-spec="${esc(f.spec)}" class="${p.spec === f.spec ? "on" : ""}"><td>${esc(f.id)}</td><td>${esc(f.ext)}</td><td>${esc(f.res)}</td><td>${esc(f.fps ?? "")}</td>
         <td>${esc(f.vcodec)}</td><td>${esc(f.acodec)}</td><td>${esc(f.lang)}</td><td class="r">${esc(bytes(f.size))}</td><td class="r">${f.tbr ? `${String(Math.round(f.tbr))}k` : ""}</td><td>${esc(f.note)}</td></tr>`).join("")}
@@ -1072,6 +1090,11 @@ async function previewAction(act) {
     renderPreview();
     return;
   }
+  if (act === "formats") {
+    p.formats = !p.formats;
+    renderPreview();
+    return;
+  }
   if (act === "open") {
     await api().open_url(p.url);
     return;
@@ -1178,6 +1201,8 @@ function bindPreview() {
 const cards = new Map();
 /** @type {Record<string, string>} */
 const MODE_ICON = { audio: "music", images: "image", video: "film", auto: "link", transcript: "text" };
+/** What each colour code stands for, said aloud. @type {Record<string, string>} */
+const CODE_NAME = { "c-video": "Video", "c-audio": "Audio", "c-images": "Pictures", "c-text": "Transcript" };
 /** Where each kind of file goes, as its colour code. @type {Record<string, string>} */
 const CODE = {
   video: "c-video", compatible: "c-video", trim: "c-video", exact: "c-video", gif: "c-video",
@@ -1216,13 +1241,12 @@ function sampleSignals(jobs) {
       signals.speeds.delete(id);
     }
   }
-  const running = jobs.filter((j) => j.status === "running").flatMap((j) => signals.speeds.get(j.id) ?? []);
-  signals.top = Math.max(256 * 1024, ...running);
+  signals.top = Math.max(256 * 1024, ...[...signals.speeds.values()].flat());
 }
 
-/** The signal line's points: the speed history while it runs, flat otherwise. @param {JobView} j */
+/** The signal line's points: the speed history once it has run, flat otherwise. @param {JobView} j */
 function signalPoints(j) {
-  const line = j.status === "running" ? signals.speeds.get(j.id) ?? [] : [];
+  const line = j.status === "running" || j.status === "done" ? signals.speeds.get(j.id) ?? [] : [];
   if (line.length < 2) {
     return "0,24 120,24";
   }
@@ -1328,11 +1352,11 @@ function card(j) {
     el = /** @type {Card} */ (document.createElement("article"));
     el.className = "job";
     el.dataset["id"] = j.id;
-    el.innerHTML = `<input type="checkbox" class="pick" aria-label="Select"><span class="no"></span><i class="code"></i><svg class="signal" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,24 120,24"/></svg>
+    el.innerHTML = `<input type="checkbox" class="pick" aria-label="Select"><span class="no"></span><i class="code" role="img"></i><svg class="signal" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,24 120,24"/></svg>
       <div class="body"><div class="title"></div><div class="item"></div><div class="meta"></div><div class="why" hidden></div></div><div class="acts"></div><pre class="log" hidden></pre><div class="bar"><i></i></div>`;
     cards.set(j.id, el);
   }
-  const sig = JSON.stringify(j) + String(S.picked.has(j.id)) + (j.status === "running" ? String(signals.top) : "");
+  const sig = JSON.stringify(j) + String(S.picked.has(j.id)) + (signals.speeds.has(j.id) ? String(signals.top) : "");
   if (el.sig === sig) {
     return el;
   }
@@ -1345,7 +1369,8 @@ function card(j) {
   $(".no", el).textContent = j.serial ? String(j.serial).padStart(4, "0") : "";
   const code = $(".code", el);
   code.className = `code ${codeOf(j)}`;
-  code.title = { "c-video": "Video", "c-audio": "Audio", "c-images": "Pictures", "c-text": "Transcript" }[codeOf(j)] ?? "Not known yet";
+  code.title = CODE_NAME[codeOf(j)] ?? "Not known yet";
+  code.setAttribute("aria-label", code.title);
   $(".signal polyline", el).setAttribute("points", signalPoints(j));
   const title = $(".title", el);
   title.textContent = j.title || j.url;
@@ -1370,7 +1395,7 @@ function card(j) {
   }
   const bar = $(".bar", el);
   bar.classList.toggle("busy", j.status === "running" && j.pct === null);
-  $("i", bar).style.width = `${String(j.pct ?? 0)}%`;
+  $("i", bar).style.transform = `scaleX(${String((j.pct ?? 0) / 100)})`;
   return el;
 }
 
@@ -1658,10 +1683,17 @@ function bindSettingsIndex() {
   const nav = $("#settings-index");
   const topOf = (/** @type {HTMLElement} */ sheet) => sheet.getBoundingClientRect().top - page.getBoundingClientRect().top + page.scrollTop;
   nav.innerHTML = sheets.map((sheet, i) => `<button type="button" data-sheet="${String(i)}">${esc($("h2", sheet).textContent)}</button>`).join("");
+  let chosen = -1;
+  for (const type of /** @type {const} */ (["wheel", "keydown", "pointerdown", "touchstart"])) {
+    on(page, type, () => {
+      chosen = -1;
+    });
+  }
   on(nav, "click", (event) => {
     const button = event.target instanceof Element ? event.target.closest("[data-sheet]") : null;
     if (button instanceof HTMLElement) {
-      const sheet = sheets[Number(button.dataset["sheet"])];
+      chosen = Number(button.dataset["sheet"]);
+      const sheet = sheets[chosen];
       page.scrollTo({ top: (sheet ? topOf(sheet) : 0) - nav.offsetHeight - 8, behavior: "smooth" });
     }
   });
@@ -1675,7 +1707,7 @@ function bindSettingsIndex() {
     });
     // The last sections are too short to reach the line, so the bottom of the page is the last one.
     if (page.scrollTop + page.clientHeight >= page.scrollHeight - 2) {
-      at = sheets.length - 1;
+      at = chosen < 0 ? sheets.length - 1 : chosen;
     }
     $$("[data-sheet]", nav).forEach((button, i) => {
       button.setAttribute("aria-current", String(i === at));
@@ -1704,8 +1736,13 @@ document.addEventListener("visibilitychange", () => {
 async function poll() {
   window.clearTimeout(pollTimer);
   try {
+    const was = new Map(S.state?.jobs.map((j) => [j.id, j.status]));
     const before = new Set(S.state?.jobs.filter((j) => j.status === "done").map((j) => j.id));
     S.state = await api().state();
+    const news = was.size ? S.state.jobs.filter((j) => (j.status === "done" || j.status === "failed") && was.get(j.id) !== j.status) : [];
+    if (news.length) {
+      $("#announce").textContent = news.map((j) => `${j.title || j.url}: ${stateText(j)}`).join(". ");
+    }
     sampleSignals(S.state.jobs);
     const ended = S.state.jobs.filter((j) => j.status === "done" && !before.has(j.id));
     if (ended.some((j) => j.job_kind === "setup")) {
@@ -2317,7 +2354,14 @@ function paintBox() {
     setupPlayer(f);
   }
   $("#lb-after").hidden = !(S.afterimage && f.kind === "video");
-  $("#lb-playable").hidden = f.kind !== "video";
+  $("#lb-playable").hidden = true;
+  if (f.kind === "video") {
+    api().plays_everywhere(f.path).then((fine) => {
+      if (current() === f) {
+        $("#lb-playable").hidden = fine;
+      }
+    }).catch(report);
+  }
   paintTextRemoval();
   $("#lb-frame").hidden = f.kind !== "video";
   $("#lb-tools").hidden = f.kind === "image";
@@ -3646,7 +3690,7 @@ function renderHistory() {
   $("#hist").innerHTML = rows.slice(0, 600).map((h) => {
     const th = safeSrc(h.thumb);
     const files = [h.nfiles ? `${String(h.nfiles)} file${h.nfiles === 1 ? "" : "s"}` : "", h.errors ? `${String(h.errors)} failed` : ""].filter(Boolean).join(", ");
-    return `<div class="hist-row ${esc(h.status)}" data-id="${esc(h.id)}" title="${esc(h.status === "failed" ? "Failed" : h.errors ? "Downloaded, some failed" : "Downloaded")}"><span class="no">${h.serial ? String(h.serial).padStart(4, "0") : ""}</span><i class="code ${codeOf(h)}"></i>
+    return `<div class="hist-row ${esc(h.status)}" data-id="${esc(h.id)}" title="${esc(h.status === "failed" ? "Failed" : h.errors ? "Downloaded, some failed" : "Downloaded")}"><span class="no">${h.serial ? String(h.serial).padStart(4, "0") : ""}</span><i class="code ${codeOf(h)}" role="img" aria-label="${CODE_NAME[codeOf(h)] ?? "Not known yet"}"></i>
       <div class="thumb">${th ? `<img src="${esc(th)}" width="64" height="36" loading="lazy" referrerpolicy="no-referrer" alt="">` : icon(MODE_ICON[h.mode] ?? "link")}</div>
       <div class="body"><div class="t">${esc(h.title || h.url)}</div><div class="u">${esc([h.title && h.title !== h.url ? h.url : "", h.said].filter(Boolean).join(", "))}</div></div>
       <div class="w"><span>${esc(h.site)}</span><span>${esc([files, ago(h.finished), h.bytes ? bytes(h.bytes) : ""].filter(Boolean).join(", "))}</span></div>
@@ -4192,7 +4236,8 @@ async function boot() {
   bindSettings();
   paintSettings();
   renderAccounts(b.accounts);
-  $("#data-show").textContent = b.data;
+  $("#data-show").replaceChildren(Object.assign(document.createElement("bdi"), { textContent: b.data }));
+  $("#data-show").title = b.data;
   refreshTextRemoval().catch(report);
   watchMaximize().catch(report);
   await poll();
