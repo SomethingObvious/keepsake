@@ -14,17 +14,35 @@ from keepsake import APP, store, winapi
 MODES = ("auto", "video", "audio", "images", "transcript")
 
 
+def own_folders() -> dict[str, str]:
+    """Return the system's own folder for each kind of download, as its other programs use them."""
+    return {
+        "folder": str(winapi.known_folder(winapi.VIDEOS, "Videos") / APP),
+        "audio_folder": str(winapi.known_folder(winapi.MUSIC, "Music") / APP),
+        "picture_folder": str(winapi.known_folder(winapi.PICTURES, "Pictures") / APP),
+        "text_folder": str(winapi.known_folder(winapi.DOCUMENTS, "Documents") / APP),
+    }
+
+
+def one_folder() -> dict[str, str]:
+    """Return every kind of download going to one Keepsake folder in Downloads."""
+    downloads = str(winapi.known_folder(winapi.DOWNLOADS, "Downloads") / APP)
+    return dict.fromkeys(own_folders(), downloads)
+
+
+FIRST_FOLDERS = one_folder() if winapi.DOWNLOADS_FIRST else own_folders()
+
+
 @dataclass(frozen=True, slots=True)
 class Options:
     """What a download does, how the queue behaves, and how Keepsake looks after itself."""
 
     # --- saving ---
-    # Windows' own folder for each kind, as its other programs use them. Empty
-    # means "with the videos".
-    folder: str = str(winapi.known_folder(winapi.VIDEOS, "Videos") / APP)
-    audio_folder: str = str(winapi.known_folder(winapi.MUSIC, "Music") / APP)
-    picture_folder: str = str(winapi.known_folder(winapi.PICTURES, "Pictures") / APP)
-    text_folder: str = str(winapi.known_folder(winapi.DOCUMENTS, "Documents") / APP)
+    # A folder for each kind. Empty means "with the videos".
+    folder: str = FIRST_FOLDERS["folder"]
+    audio_folder: str = FIRST_FOLDERS["audio_folder"]
+    picture_folder: str = FIRST_FOLDERS["picture_folder"]
+    text_folder: str = FIRST_FOLDERS["text_folder"]
     by_site: bool = False  # off: videos loose, one folder per gallery
     template: str = "%(title).180B [%(id)s].%(ext)s"
     file_date: str = "download"  # download | upload

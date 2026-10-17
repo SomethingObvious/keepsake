@@ -83,6 +83,9 @@ MUSIC = "4BD8D571-6D19-48D3-BE97-422220080E43"
 PICTURES = "33E28130-4E1E-4676-835A-98395C3BC3BB"
 DOCUMENTS = "FDD39AD0-238F-46AF-ADB4-6C85480369C7"
 DOWNLOADS = "374DE290-123F-4565-9164-39C4925E467B"
+# Windows' other programs look for videos in Videos and music in Music, so a fresh
+# install files them there. The phone app starts everything in Downloads instead.
+DOWNLOADS_FIRST = False
 ERROR_ALREADY_EXISTS = 183
 SYNCHRONIZE = 0x00100000
 SW_RESTORE = 9
