@@ -10,7 +10,7 @@
   </head>
   <body data-mode="auto">
     <a class="skip" href="#main">Skip to the page</a>
-    <div class="titlebar">
+    <div class="titlebar" data-desktop>
       <button type="button" class="win" id="win-min" title="Minimize" aria-label="Minimize"><span data-i="minimize"></span></button>
       <button type="button" class="win" id="win-max" title="Maximize" aria-label="Maximize"><span data-i="maximize"></span></button>
       <button type="button" class="win close" id="win-close" title="Close" aria-label="Close"><span data-i="close"></span></button>
@@ -22,9 +22,9 @@
         <small>Keeps what you find online</small>
       </div>
       <nav aria-label="Pages">
-        <button type="button" data-tab="downloads" class="tab on"><span data-i="download"></span>Downloads<span class="count" id="nav-count"></span></button>
+        <button type="button" data-tab="downloads" class="tab on"><span data-i="download"></span><span class="name">Downloads</span><span class="short" aria-hidden="true">Queue</span><span class="count" id="nav-count"></span></button>
         <button type="button" class="tab" data-tab="search"><span data-i="search"></span>Search</button>
-        <button type="button" class="tab" data-tab="subscriptions"><span data-i="bell"></span>Subscriptions<span class="count" id="nav-subs"></span></button>
+        <button type="button" class="tab" data-tab="subscriptions"><span data-i="bell"></span><span class="name">Subscriptions</span><span class="short" aria-hidden="true">Subs</span><span class="count" id="nav-subs"></span></button>
         <button type="button" class="tab" data-tab="library"><span data-i="grid"></span>Library</button>
         <button type="button" class="tab" data-tab="history"><span data-i="clock"></span>History</button>
         <button type="button" class="tab" data-tab="settings"><span data-i="sliders"></span>Settings</button>
@@ -82,9 +82,9 @@
                 <option value="best">Original, not converted</option>
               </select>
               <div class="go">
-                <button type="button" class="btn ghost" id="toggle-options" aria-expanded="false" aria-controls="drawer"><span data-i="sliders"></span>Options<span class="badge" id="optcount" hidden></span></button>
-                <button type="button" class="btn ghost" id="preview-btn"><span data-i="eye"></span>Preview</button>
-                <button type="button" class="btn ghost" id="clip-btn" title="Preview the link with its clip bar ready, to download only part of it"><span data-i="scissors"></span>Clip</button>
+                <button type="button" class="btn ghost" id="toggle-options" aria-expanded="false" aria-controls="drawer"><span data-i="sliders"></span><span class="label">Options</span><span class="badge" id="optcount" hidden></span></button>
+                <button type="button" class="btn ghost" id="preview-btn"><span data-i="eye"></span><span class="label">Preview</span></button>
+                <button type="button" class="btn ghost" id="clip-btn" title="Preview the link with its clip bar ready, to download only part of it"><span data-i="scissors"></span><span class="label">Clip</span></button>
                 <button type="button" class="btn primary" id="download-btn"><span data-i="download"></span>Download</button>
               </div>
             </div>
@@ -334,10 +334,10 @@
               <svg class="signal" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,24 120,24"/></svg>
               <div class="body">
                 <div class="title">Paste a link to start</div>
-                <div class="item">Or drop links onto this window, <button type="button" class="inline" id="import-links">add them from a file</button>, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> in any program to fetch what you copied.</div>
+                <div class="item" data-desktop>Or drop links onto this window, <button type="button" class="inline" id="import-links">add them from a file</button>, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd> in any program to fetch what you copied.</div>
               </div>
             </div>
-            <p class="keys-hint"><span><kbd>Enter</kbd> downloads</span><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> previews first</span><span><kbd>?</kbd> lists every shortcut</span></p>
+            <p class="keys-hint" data-desktop><span><kbd>Enter</kbd> downloads</span><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> previews first</span><span><kbd>?</kbd> lists every shortcut</span></p>
           </div>
         </div>
       </section>
@@ -454,7 +454,7 @@
               <button type="button" class="btn ghost" id="sub-cancel">Cancel</button>
             </div>
           </form>
-          <p class="hint" id="subs-hint">Keepsake checks while it is running. Turn on <em>Keep running in the tray</em> and <em>Start with Windows</em> in Settings so nothing new is missed.</p>
+          <p class="hint" id="subs-hint" data-desktop>Keepsake checks while it is running. Turn on <em>Keep running in the tray</em> and <em>Start with Windows</em> in Settings so nothing new is missed.</p>
           <div class="subs" id="subs"></div>
           <div class="empty" id="subs-empty">
             <strong>Nothing subscribed</strong>
@@ -597,7 +597,7 @@
               <div class="c"><button type="button" class="btn" id="pick-cookies"><span data-i="file"></span>Choose file</button></div></div>
           </section>
 
-          <section class="sheet">
+          <section class="sheet" data-desktop>
             <h2>Browser</h2>
             <div class="setting"><div><div class="l">Send pages to Keepsake</div><div class="h">Drag these to the bookmarks bar. Clicking one on a page downloads it; the browser asks once whether to open Keepsake.</div></div>
               <div class="c"><a class="bookmarklet" id="bm-video" href="#">Keepsake</a><a class="bookmarklet" id="bm-audio" href="#">Keepsake audio</a></div></div>
@@ -641,9 +641,9 @@
 
           <section class="sheet">
             <h2>Behaviour</h2>
-            <div class="setting"><div><div class="l">Keep running in the tray when closed</div><div class="h">Downloads and subscriptions carry on; quit from the tray icon</div></div>
+            <div class="setting" data-desktop><div><div class="l">Keep running in the tray when closed</div><div class="h">Downloads and subscriptions carry on. Quit from the tray icon.</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="close_to_tray" aria-label="Keep running in the tray"></div></div>
-            <div class="setting"><div><div class="l">Start with Windows</div><div class="h">Quietly, in the tray</div></div>
+            <div class="setting" data-desktop><div><div class="l">Start with Windows</div><div class="h">Quietly, in the tray</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="autostart" aria-label="Start with Windows"></div></div>
             <div class="setting"><div><div class="l">Notifications</div><div class="h">When a download finishes or fails while you are elsewhere</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="notify" aria-label="Notifications"></div></div>
@@ -720,7 +720,7 @@
           <button type="button" class="btn ghost" id="lb-open" title="Open"><span data-i="external"></span><span class="label">Open</span></button>
           <button type="button" class="btn ghost" id="lb-reveal" title="Show in folder"><span data-i="folder"></span><span class="label">Show in folder</span></button>
           <button type="button" class="btn ghost" id="lb-copy" title="Copy path"><span data-i="copy"></span><span class="label">Copy path</span></button>
-          <button type="button" class="btn ghost" id="lb-after" hidden title="Open in Afterimage"><span data-i="aperture"></span><span class="label">Afterimage</span></button>
+          <button type="button" class="btn ghost" id="lb-after" data-desktop hidden title="Open in Afterimage"><span data-i="aperture"></span><span class="label">Afterimage</span></button>
           <button type="button" class="btn ghost" id="lb-detext" hidden title="Save a copy with the captions, stickers and watermarks taken off (T)"><span data-i="eraser"></span><span class="label">Remove Added Text</span></button>
           <button type="button" class="btn ghost" id="lb-playable" data-convert="compatible" hidden title="A copy in H.264 and AAC in an MP4, which every player and phone plays. Made on the graphics card when there is one."><span data-i="film"></span><span class="label">Make a Playable Copy</span></button>
           <button type="button" class="btn ghost danger" id="lb-delete" title="Move to the Recycle Bin"><span data-i="trash"></span><span class="label">Delete</span></button>
