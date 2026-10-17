@@ -716,7 +716,7 @@ function handClip() {
     toast("There is no single video here to clip, so this is a plain preview");
     return;
   }
-  bar.scrollIntoView({ block: "center", behavior: "smooth" });
+  bar.scrollIntoView({ block: "nearest", behavior: "smooth" });
   /** @type {HTMLElement | null} */ (bar.querySelector("[tabindex]"))?.focus({ preventScroll: true });
 }
 
@@ -737,6 +737,8 @@ function renderPreview() {
   const box = $("#preview");
   const p = S.preview;
   box.hidden = !p;
+  // The preview carries its own Download, so the red block moves there.
+  $("#download-btn").classList.toggle("primary", !p);
   if (!p) {
     box.replaceChildren();
     return;
@@ -791,7 +793,7 @@ function previewTop(p, probe) {
   const fine = video?.kind === "video"
     ? `<div class="fine"><label for="pv-rename">Name</label><input class="field" id="pv-rename" data-pv-field="rename" placeholder="${esc(probe.title)}" value="${esc(p.rename)}">
       <span>Folder</span><span class="c"><button type="button" class="btn small path" data-pv="open-folder" title="Open ${esc(p.folder || video.folder)}">${icon("folder")}<span class="where">${esc(p.folder || video.folder)}</span></button><button type="button" class="btn ghost small" data-pv="folder">Change</button></span>
-      <span>Saved as</span><span class="file" title="${esc(video.file)}">${esc(video.file)}</span></div>`
+      <span>Saves as</span><span class="file" title="${esc(video.file)}">${esc(video.file)}</span></div>`
     : "";
   const poster = p.clip?.watch
     ? '<div class="poster watch"></div>'
@@ -818,9 +820,9 @@ function previewBody(p, probe) {
     return `<div class="section-title">Items</div><div class="entries">${probe.entries.map((e, i) => `<label><input type="checkbox" data-idx="${String(i + 1)}" ${!p.picked || p.picked.has(i + 1) ? "checked" : ""}>
       <span class="n">${String(i + 1)}</span><span class="d">${esc(dur(e.duration))}</span><span class="t">${esc(e.title)}</span></label>`).join("")}</div>`;
   }
-  let body = p.clip ? '<div class="section-title">Clip: download only part of it</div><div class="pv-clip-slot"></div>' : "";
+  let body = p.clip ? '<div class="section-title">Clip<span class="hint">Download only part of it</span></div><div class="pv-clip-slot"></div>' : "";
   if (probe.chapters.length) {
-    body += `<div class="section-title">Chapters: tick to download only those</div><div class="entries">${probe.chapters.map((c, i) => `<label><input type="checkbox" data-chapter="${esc(c.title)}" ${p.chapters.has(c.title) ? "checked" : ""}>
+    body += `<div class="section-title">Chapters<span class="hint">Tick to download only those</span></div><div class="entries">${probe.chapters.map((c, i) => `<label><input type="checkbox" data-chapter="${esc(c.title)}" ${p.chapters.has(c.title) ? "checked" : ""}>
       <span class="n">${String(i + 1)}</span><span class="d">${esc(dur(c.start))}</span><span class="t">${esc(c.title)}</span></label>`).join("")}</div>`;
   }
   if (probe.formats.length) {
@@ -1241,6 +1243,9 @@ function stateText(j) {
   if (j.status === "done" && j.repeat) {
     return "Already downloaded";
   }
+  if (j.status === "done" && j.errors) {
+    return `Done, ${String(j.errors)} failed`;
+  }
   return { queued: "Waiting", done: "Done", failed: "Failed", paused: "Paused", cancelled: "Cancelled" }[j.status];
 }
 
@@ -1307,6 +1312,7 @@ function actions(j) {
       return actButton("retry", "refresh", "Start again") + actButton("remove", "x", "Remove", "warn");
     case "done":
       return (j.repeat ? '<button type="button" class="btn small" data-act="again" title="Fetch it anyway, past the archive">Download Again</button>' : "") +
+        (j.errors ? '<button type="button" class="btn small" data-act="retry">Try Again</button>' : "") +
         (j.first ? actButton("open", "external", "Open") + actButton("reveal", "folder", "Show in folder") : "") +
         (j.video && S.afterimage ? actButton("afterimage", "aperture", "Open in Afterimage") : "") +
         (j.job_kind === "download" ? actButton("page", "link", "Open the page") : "") + log + actButton("remove", "x", "Remove from the list");
@@ -1329,8 +1335,11 @@ function card(j) {
     return el;
   }
   el.sig = sig;
-  el.className = `job ${j.status}${S.picked.has(j.id) ? " picked" : ""}`;
-  /** @type {HTMLInputElement} */ ($(".pick", el)).checked = S.picked.has(j.id);
+  const partial = j.status === "done" && j.errors > 0;
+  el.className = `job ${j.status}${partial ? " partial" : ""}${S.picked.has(j.id) ? " picked" : ""}`;
+  const pick = /** @type {HTMLInputElement} */ ($(".pick", el));
+  pick.checked = S.picked.has(j.id);
+  pick.setAttribute("aria-label", `Select ${j.title || j.url}`);
   $(".no", el).textContent = j.serial ? String(j.serial).padStart(4, "0") : "";
   const code = $(".code", el);
   code.className = `code ${codeOf(j)}`;
@@ -1343,14 +1352,16 @@ function card(j) {
   const itemEl = $(".item", el);
   itemEl.textContent = item;
   itemEl.hidden = !item;
-  const bad = j.status === "done" && j.errors ? [`<span class="bad" title="Open the log to see which">${String(j.errors)} failed</span>`] : [];
-  $(".meta", el).innerHTML = [`<span class="state">${esc(stateText(j))}</span>`, ...metaParts(j).map((m) => `<span>${esc(m)}</span>`), ...bad].join("");
+  $(".meta", el).innerHTML = [`<span class="state">${esc(stateText(j))}</span>`, ...metaParts(j).map((m) => `<span>${esc(m)}</span>`)].join("");
   const why = $(".why", el);
-  why.hidden = j.status !== "failed";
+  why.hidden = j.status !== "failed" && !partial;
   if (j.status === "failed") {
     why.innerHTML = `<b>${esc(j.advice)}</b>${j.said ? `<span class="said">The site said: ${esc(j.said)}</span>` : ""}`;
+  } else if (partial) {
+    const what = j.errors === 1 ? "One of them" : `${String(j.errors)} of them`;
+    why.innerHTML = `<b>${what} did not download, and what did arrive is kept.</b><span class="said">${j.said ? `The site said: ${esc(j.said)}` : "The log says which."}</span>`;
   }
-  const key = j.status + String(j.repairable);
+  const key = j.status + String(j.repairable) + String(partial);
   if (el.status !== key) {
     el.status = key;
     $(".acts", el).innerHTML = actions(j);
@@ -1418,11 +1429,17 @@ function renderQueueHead(state) {
   $("#empty").hidden = state.jobs.length > 0;
   $("#qhead").hidden = state.jobs.length === 0;
   $("#next-no").textContent = String(state.next).padStart(4, "0");
+  const partial = state.jobs.filter((j) => j.status === "done" && j.errors > 0).length;
   $("#qsummary").textContent = [
     active ? `${String(active)} downloading` : "", waiting ? `${String(waiting)} waiting` : "",
     count("paused") ? `${String(count("paused"))} paused` : "", count("failed") ? `${String(count("failed"))} failed` : "",
-    count("done") ? `${String(count("done"))} done` : "",
+    count("done") ? `${String(count("done"))} done` : "", partial ? `${String(partial)} with failures` : "",
   ].filter(Boolean).join(", ");
+  // Each control shows only when there is something for it to act on.
+  $("#hold-btn").hidden = !active && !waiting && state.held !== Infinity;
+  $("[data-all=retry]").hidden = !count("failed") && !partial;
+  $("[data-all=clear]").hidden = !count("done") && !count("failed") && !count("cancelled");
+  $("[data-all=cancel]").hidden = !active && !waiting && !count("paused");
   const speed = running.reduce((total, j) => total + (j.speed ?? 0), 0);
   const known = running.filter((j) => j.pct !== null);
   const overall = known.length ? known.reduce((total, j) => total + (j.pct ?? 0), 0) / known.length : null;
@@ -1653,6 +1670,10 @@ function bindSettingsIndex() {
         at = i;
       }
     });
+    // The last sections are too short to reach the line, so the bottom of the page is the last one.
+    if (page.scrollTop + page.clientHeight >= page.scrollHeight - 2) {
+      at = sheets.length - 1;
+    }
     $$("[data-sheet]", nav).forEach((button, i) => {
       button.setAttribute("aria-current", String(i === at));
     });
@@ -3611,8 +3632,8 @@ function renderHistory() {
   const hb = (act, name, title) => `<button type="button" class="icon-btn" data-h="${act}" title="${esc(title)}" aria-label="${esc(title)}">${icon(name)}</button>`;
   $("#hist").innerHTML = rows.slice(0, 600).map((h) => {
     const th = safeSrc(h.thumb);
-    const files = h.nfiles ? `${String(h.nfiles)} file${h.nfiles === 1 ? "" : "s"}` : "";
-    return `<div class="hist-row ${esc(h.status)}" data-id="${esc(h.id)}" title="${esc(h.status === "failed" ? "Failed" : "Downloaded")}"><span class="no">${h.serial ? String(h.serial).padStart(4, "0") : ""}</span><i class="code ${codeOf(h)}"></i>
+    const files = [h.nfiles ? `${String(h.nfiles)} file${h.nfiles === 1 ? "" : "s"}` : "", h.errors ? `${String(h.errors)} failed` : ""].filter(Boolean).join(", ");
+    return `<div class="hist-row ${esc(h.status)}" data-id="${esc(h.id)}" title="${esc(h.status === "failed" ? "Failed" : h.errors ? "Downloaded, some failed" : "Downloaded")}"><span class="no">${h.serial ? String(h.serial).padStart(4, "0") : ""}</span><i class="code ${codeOf(h)}"></i>
       <div class="thumb">${th ? `<img src="${esc(th)}" width="64" height="36" loading="lazy" referrerpolicy="no-referrer" alt="">` : icon(MODE_ICON[h.mode] ?? "link")}</div>
       <div class="body"><div class="t">${esc(h.title || h.url)}</div><div class="u">${esc([h.title && h.title !== h.url ? h.url : "", h.said].filter(Boolean).join(", "))}</div></div>
       <div class="w"><span>${esc(h.site)}</span><span>${esc([files, ago(h.finished), h.bytes ? bytes(h.bytes) : ""].filter(Boolean).join(", "))}</span></div>

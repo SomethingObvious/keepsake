@@ -85,6 +85,17 @@ def test_a_stopped_job_is_paused_or_cancelled_not_failed(queue: Queue) -> None:
     assert queue.history.entries == []
 
 
+def test_retry_failed_takes_jobs_that_only_half_worked(queue: Queue) -> None:
+    """What arrived is done, the site's words are kept, and Retry Failed takes it too."""
+    job = queue.add("https://x/list", "video", Options())
+    job.files, job.errors = ["a.mp4"], 1
+    job.log.append("ERROR: [youtube] b: Private video. Sign in if you've been granted access")
+    queue.settle(job, ok=True, message="")
+    assert (job.status, job.said) == ("done", "Private video.")
+    assert queue.incomplete() == [job.id]
+    assert queue.history.entries[0]["errors"] == 1
+
+
 def test_the_queue_survives_a_restart(data: Path, queue: Queue) -> None:
     """Waiting and paused jobs come back; finished ones do not."""
     queue.add("https://example.com/wait", "audio", Options(quality="720"))
