@@ -779,7 +779,7 @@ function previewTop(p, probe) {
     probe.site, probe.uploader,
     video?.kind === "video" ? dur(video.duration) : "",
     video?.kind === "playlist" ? `${String(video.count)} items` : "",
-    probe.kind === "gallery" ? `${String(probe.count)}${probe.more ? "+" : ""} files` : "",
+    probe.kind === "gallery" ? `${String(probe.count)}${probe.more ? "+" : ""} file${probe.count === 1 && !probe.more ? "" : "s"}` : "",
     video?.date ? uploaded(video.date) : "",
     video?.views ? `${video.views.toLocaleString()} views` : "",
     video?.live === "is_live" ? "live now" : video?.live === "is_upcoming" ? "not started yet" : "",
@@ -2047,7 +2047,7 @@ function renderLibrary() {
   const items = libItems();
   const shown = items.slice(0, S.libShown);
   const total = S.lib.reduce((sum, f) => sum + f.size, 0);
-  $("#libcount").textContent = S.lib.length ? `${String(S.lib.length)} files, ${bytes(total)}` : "";
+  $("#libcount").textContent = S.lib.length ? `${String(S.lib.length)} file${S.lib.length === 1 ? "" : "s"}, ${bytes(total)}` : "";
   $("#grid").innerHTML = shown.map((f, i) => {
     const ext = f.name.split(".").pop() ?? "";
     const thumb = `<img data-path="${esc(f.path)}" data-uri="${esc(f.uri)}" width="176" height="176" decoding="async" alt=""`;
@@ -3632,7 +3632,7 @@ function renderHistory() {
   const rows = data.entries.filter((h) => !query || h.title.toLowerCase().includes(query) || h.url.toLowerCase().includes(query));
   const s = data.stats;
   $("#histcount").textContent = data.entries.length
-    ? [`${String(data.entries.length)} downloads`, bytes(s.bytes), s.failed ? `${String(s.failed)} failed` : ""].filter(Boolean).join(", ")
+    ? [`${String(data.entries.length)} download${data.entries.length === 1 ? "" : "s"}`, bytes(s.bytes), s.failed ? `${String(s.failed)} failed` : ""].filter(Boolean).join(", ")
     : "";
   $("#histempty").hidden = rows.length > 0;
   $("#hist").hidden = rows.length === 0;
