@@ -4688,6 +4688,12 @@
   :root[data-platform="android"] :is([data-desktop], [data-act="afterimage"], [data-p="pip"]) {
     display: none;
   }
+
+  /* Android's Back is a swipe in from either side, so Remove Text's picture keeps clear of
+    both, and a stroke can start at its edge. */
+  :root[data-platform="android"] #er-stage {
+    padding-inline: 32px;
+  }
 }
 
 [hidden] {
