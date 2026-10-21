@@ -23,7 +23,7 @@ from typing import Final, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, JpegImagePlugin
 
 from keepsake import media
 
@@ -393,10 +393,14 @@ def splice_jpeg(
     The touched blocks are encoded with the original's own quantisation tables
     and chroma sampling, so they match their neighbours; every other block's
     coefficients are copied, which means no generation loss outside the edit,
-    and the original's EXIF and colour profile stay.
+    and the original's EXIF and colour profile stay. Without jpeglib, as in
+    the phone app, the whole picture is encoded again instead.
     """
-    import jpeglib  # only a JPEG needs it
-
+    try:
+        import jpeglib  # only a JPEG needs it
+    except ImportError:
+        encode_jpeg(original, edited, target)
+        return
     source = jpeglib.read_dct(str(original))
     fresh = jpeglib.from_spatial(np.ascontiguousarray(edited))
     fresh.samp_factor = source.samp_factor
@@ -419,6 +423,24 @@ def splice_jpeg(
         source.Cb[chroma] = redone.Cb[chroma]
         source.Cr[chroma] = redone.Cr[chroma]
     source.write_dct(str(target))
+
+
+def encode_jpeg(original: Path, edited: Picture, target: Path) -> None:
+    """Write `edited` as a new JPEG with the original's tables, sampling, EXIF and colour profile.
+
+    Every block is encoded again, so unlike the splice nothing promises that
+    the rest of the picture stays exactly as it was, though with the
+    original's own tables it barely moves.
+    """
+    with Image.open(original) as source:
+        settings: dict[str, object] = {
+            "exif": source.info.get("exif", b""),
+            "icc_profile": source.info.get("icc_profile"),
+        }
+        if isinstance(source, JpegImagePlugin.JpegImageFile):
+            settings["qtables"] = source.quantization
+            settings["subsampling"] = JpegImagePlugin.get_sampling(source)
+    Image.fromarray(edited).save(target, "JPEG", **settings)
 
 
 def keep_beside(original: Path, cleaned: Path) -> Path:

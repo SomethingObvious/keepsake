@@ -1,12 +1,14 @@
 """The eraser: the snap, the fill, undo, and saving a copy that changes only what was edited."""
 
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import jpeglib
 import numpy as np
+import pytest
 from numpy.typing import NDArray
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, JpegImagePlugin
 
 from keepsake import eraser
 
@@ -146,6 +148,34 @@ def test_a_sideways_photo_is_edited_upright_and_saved_the_way_it_is_stored(
     turned = eraser.stored(changed.astype(np.uint8), ORIENTATION_SIDEWAYS) > 0
     touched = eraser.blocks_touched(turned, before.Y.shape, (1, 1))
     assert (before.Y[~touched] == after.Y[~touched]).all()
+
+
+def test_without_jpeglib_a_jpeg_is_encoded_again_with_its_own_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The phone app has no jpeglib, so the copy is encoded again, keeping what the photo set."""
+    monkeypatch.setitem(sys.modules, "jpeglib", None)
+    original = tmp_path / "phone.jpg"
+    exif = Image.Exif()
+    exif[eraser.ORIENTATION] = ORIENTATION_SIDEWAYS
+    Image.fromarray(photo()).save(original, quality=80, subsampling="4:4:4", exif=exif)
+    opened = eraser.load(original)
+    edited = opened.picture.copy()
+    changed = np.zeros(edited.shape[:2], dtype=bool)
+    changed[16:48, 24:56] = True
+    edited[changed] = (255, 255, 255)
+    copy = eraser.write(opened, edited, changed)
+    assert copy.name == "phone (no text).jpg"
+    with Image.open(original) as before, Image.open(copy) as after:
+        assert isinstance(before, JpegImagePlugin.JpegImageFile)
+        assert isinstance(after, JpegImagePlugin.JpegImageFile)
+        assert after.quantization == before.quantization
+        assert JpegImagePlugin.get_sampling(after) == JpegImagePlugin.get_sampling(before)
+        assert after.getexif()[eraser.ORIENTATION] == ORIENTATION_SIDEWAYS
+    again = eraser.load(copy).picture.astype(int)
+    assert again[20:44, 28:52].min() > 230
+    far = ~eraser.grow(changed, 24)
+    assert np.abs(again[far] - opened.picture[far]).max() <= 2  # the same tables barely move it
 
 
 def test_the_editor_suggests_removes_undoes_and_saves_a_copy(tmp_path: Path) -> None:
