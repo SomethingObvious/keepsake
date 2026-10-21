@@ -441,8 +441,10 @@ function settingUpTextRemoval() {
   return S.state?.jobs.some((j) => j.job_kind === "setup" && j.url.startsWith("text-removal") && (j.status === "queued" || j.status === "running")) ?? false;
 }
 
-/** Remove Text is optional: until it is set up, Settings is the only place that shows it. */
+/** Remove Text is optional. Its button is on every still picture, and offers the download until it is set up. */
 function paintTextRemoval() {
+  const f = current();
+  $("#lb-erase").hidden = f?.kind !== "image" || !DETEXT_TYPES.test(f.name);
   const t = S.textRemoval;
   if (!t) {
     return;
@@ -459,8 +461,6 @@ function paintTextRemoval() {
   $("#detext-about").textContent = about;
   $("#detext-setup").hidden = busy || t.ready;
   $("#detext-forget").hidden = busy || !t.ready;
-  const f = current();
-  $("#lb-erase").hidden = !t.ready || f?.kind !== "image" || !DETEXT_TYPES.test(f.name);
 }
 
 async function refreshTextRemoval() {
@@ -510,6 +510,10 @@ function bindTextRemoval() {
 async function removeTextHere() {
   const f = current();
   if (f?.kind !== "image" || !DETEXT_TYPES.test(f.name)) {
+    return;
+  }
+  if (settingUpTextRemoval()) {
+    toast("Remove Text is being set up: try again when that is done");
     return;
   }
   if (!textRemovalReady()) {
@@ -1056,10 +1060,9 @@ function show(tab) {
   } else if (tab === "settings") {
     void loadSettingsExtras();
     $("#settings").dispatchEvent(new Event("scroll"));
-  } else if (tab === "downloads") {
-    urls().focus();
-  } else if (tab === "search") {
-    $("#search-q").focus();
+  } else if ((tab === "downloads" || tab === "search") && !matchMedia("(pointer: coarse)").matches) {
+    // A touch screen would raise its keyboard over the page for a box nobody tapped.
+    (tab === "downloads" ? urls() : $("#search-q")).focus();
   }
 }
 
@@ -2462,8 +2465,21 @@ function bindSubs() {
 /** @type {IntersectionObserver | null} */
 let observer = null;
 
+/** The small pictures Keepsake gave, by file, size and time as it keeps them, so a grid drawn again has them at once. @type {Map<string, string>} */
+const thumbs = new Map();
+
+/** @param {LibFile} f */
+function thumbKey(f) {
+  return `${f.path}|${String(f.size)}|${String(f.time)}`;
+}
+
 async function loadLibrary() {
-  [S.lib, S.lists] = await Promise.all([api().library(), api().playlists()]);
+  const [lib, lists] = await Promise.all([api().library(), api().playlists()]);
+  // Coming back to a library nothing has changed in keeps the grid as drawn.
+  if (JSON.stringify([lib, lists]) === JSON.stringify([S.lib, S.lists]) && $("#grid").childElementCount) {
+    return;
+  }
+  [S.lib, S.lists] = [lib, lists];
   renderLibrary();
 }
 
@@ -2499,10 +2515,11 @@ function renderLibrary() {
   $("#libcount").textContent = S.lib.length ? `${String(S.lib.length)} file${S.lib.length === 1 ? "" : "s"}, ${bytes(total)}` : "";
   $("#grid").innerHTML = shown.map((f, i) => {
     const ext = f.name.split(".").pop() ?? "";
-    const thumb = `<img data-path="${esc(f.path)}" data-uri="${esc(f.uri)}" width="176" height="176" decoding="async" alt=""`;
+    const known = thumbs.get(thumbKey(f));
+    const thumb = `<img data-path="${esc(f.path)}" data-key="${esc(thumbKey(f))}" data-uri="${esc(f.uri)}"${known ? ` src="${esc(known)}"` : ""} width="176" height="176" decoding="async" alt=""`;
     const media = f.kind === "image"
       ? `${thumb}>`
-      : f.kind === "video" ? `${thumb} data-video>${icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
+      : f.kind === "video" ? `${thumb} data-video>${known ? "" : icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
     const where = f.folder === "." ? f.name : `${f.folder}\\${f.name}`;
     const picked = S.libPicked.has(f.path);
     return `<button type="button" class="tile${picked ? " picked" : ""}" data-i="${String(i)}" aria-label="${S.libPicking ? "Pick" : "View"} ${esc(f.name)}"${S.libPicking ? ` aria-pressed="${String(picked)}"` : ""}><span class="ph">${media}<span class="tick">${icon("check")}</span><span class="kind"><i class="code ${CODE[f.kind] ?? "c-wait"}"></i>${f.serial ? `${String(f.serial).padStart(4, "0")} ` : ""}${esc(ext)}</span></span>
@@ -2526,7 +2543,7 @@ function renderLibrary() {
       }
     }
   }, { root: $("#library"), rootMargin: "400px" });
-  for (const waiting of $$("#grid img[data-path], #grid .wave[data-path]")) {
+  for (const waiting of $$("#grid img[data-path]:not([src]), #grid .wave[data-path]")) {
     observer.observe(waiting);
   }
 }
@@ -2539,6 +2556,9 @@ function renderLibrary() {
 function drawThumb(img) {
   const video = "video" in img.dataset;
   api().thumbnail(img.dataset["path"] ?? "").then((url) => {
+    if (url) {
+      thumbs.set(img.dataset["key"] ?? "", url);
+    }
     if (url || !video) {
       if (video) {
         img.addEventListener("load", () => img.nextElementSibling?.remove(), { once: true });
@@ -4630,8 +4650,11 @@ function paintSaving() {
 /* ============================== history ============================== */
 
 async function loadHistory() {
-  S.hist = await api().history();
-  renderHistory();
+  const hist = await api().history();
+  if (JSON.stringify(hist) !== JSON.stringify(S.hist)) {
+    S.hist = hist;
+    renderHistory();
+  }
 }
 
 function renderHistory() {

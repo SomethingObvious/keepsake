@@ -20,7 +20,7 @@ Open KeepsakeSetup.exe. It installs for your account only and brings its own Pyt
 * Takes links from a hotkey (Ctrl+Alt+D in any program), bookmarklets or the clipboard.
 * Keeps yt-dlp, gallery-dl and itself up to date.
 
-Remove Text, an optional extra set up in Settings, takes captions, stickers and watermarks off a picture: paint over them in the viewer, and a copy is saved beside the picture without them, leaving the original as it was. It is a download of about 46 MB, and nothing of it is fetched until you set it up. [ERASER.md](ERASER.md) has the details.
+Remove Text, an optional extra, takes captions, stickers and watermarks off a picture: paint over them in the viewer, and a copy is saved beside the picture without them, leaving the original as it was. Its button is on every picture in the viewer. It is a download of about 46 MB, which the button or Settings offers, and nothing of it is fetched until you set it up. [ERASER.md](ERASER.md) has the details.
 
 ## Building It
 
