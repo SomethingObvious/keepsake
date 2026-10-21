@@ -107,12 +107,10 @@ def test_a_job_restored_after_a_restart_is_the_same_job() -> None:
     """Everything needed to start again comes back."""
     job = make(quality="720")
     job.sub, job.archive, job.ytdlp_extra = "sub1", "C:/a", ["--break-on-existing"]
-    job.pictures = ["C:/a.jpg", "C:/b.png"]
     again = Job.restore(job.saved())
     assert again is not None
     assert (again.url, again.sub, again.archive) == (job.url, "sub1", "C:/a")
     assert again.ytdlp_extra == ["--break-on-existing"]
-    assert again.pictures == ["C:/a.jpg", "C:/b.png"]
     assert again.options.quality == "720"
     assert Job.restore({"mode": "video"}) is None
 

@@ -15,13 +15,13 @@ git config core.hooksPath .githooks
 | --- | --- |
 | `keepsake/` | The program, one module per concern, typed throughout |
 | `ui/` | The window: `index.html`, `app.css`, and `app.js` type-checked against `types.d.ts` |
-| `detext/` | The text remover, which runs in its own environment that `keepsake/textremoval.py` sets up. `DETEXT.md` has its design and measurements |
+| `ERASER.md` | Remove Text: how `keepsake/eraser.py` snaps and fills, and what was measured |
 | `tests/` | pytest, against a scratch data folder so nothing touches the real one |
 | `scripts/lint.py` | Every check, in one command |
 | `scripts/install.py` | Installs the self-updating copy and its shortcuts |
 | `scripts/build.py`, `packaging/` | Build the installer and the app zip that installed copies update from |
 | `docs/` | The website, served by GitHub Pages from main |
-| `typings/` | Stubs for libraries that ship no types, or that live only in the text remover's environment |
+| `typings/` | Stubs for libraries that ship no types |
 
 ## Checks
 
@@ -42,6 +42,6 @@ python scripts/build.py
 gh release create v1.0.0 dist/KeepsakeSetup.exe dist/keepsake-app-1.0.0.zip --title "Keepsake 1.0.0" --notes-file notes.md
 ```
 
-Installed copies show each line of the notes that starts with `-` or `*`. The remover's network (`detext/overlay.onnx`) is not in the installer or the app zip. Setup downloads it from the tag in `textremoval.NETWORK_TAG`, so a new network needs a new tag, and a new size and hash in `QUICK_FILES`.
+Installed copies show each line of the notes that starts with `-` or `*`. Remove Text's two models are not in the installer or the app zip. Setup downloads them, pinned in `textremoval.FILES`: the overlay network from this repository at the tag in `textremoval.NETWORK_TAG`, and MI-GAN from Hugging Face at a fixed revision. A new network needs a new tag, and a new size and hash in `FILES`.
 
 The site's screenshots are 1440 by 900 window captures with the frame cropped off, saved as WebP at 1600 and 960 pixels wide.

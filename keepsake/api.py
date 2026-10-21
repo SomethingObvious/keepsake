@@ -8,9 +8,10 @@ one private attribute, because pywebview would expose a public one too.
 """
 
 import json
+import math
 import os
 import threading
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import cast
 
@@ -19,6 +20,7 @@ import webview
 from keepsake import (
     __version__,
     cookies,
+    eraser,
     library,
     media,
     paths,
@@ -35,6 +37,9 @@ from keepsake.subscriptions import overrides_from
 
 type Data = dict[str, object]
 LINK_FILE_LIMIT = 20_000_000  # bytes: a list of links, not a video
+# A stroke from the eraser: at most this many points, and a brush this wide.
+STROKE_POINTS = 20_000
+BRUSH_LARGEST = 4000.0
 
 
 def as_text(value: object, default: str = "") -> str:
@@ -61,6 +66,14 @@ def as_ids(value: object) -> list[str]:
         if isinstance(value, list)
         else []
     )
+
+
+def attempt(edit: Callable[[], Data | None]) -> Data:
+    """Run an eraser step and return what it drew, {} for nothing, or what went wrong."""
+    try:
+        return edit() or {}
+    except RuntimeError as problem:
+        return {"error": str(problem)}
 
 
 def nearest_folder(path: str) -> Path | None:
@@ -318,20 +331,14 @@ class Api:
     def convert(self, path: object, how: object, start: object = 0, end: object = 0) -> str:
         """Queue a conversion of a file and return its job's id, or "" when it cannot be done.
 
-        How: compatible, a sound format, trim, exact, gif or detext.
+        How: compatible, a sound format, trim, exact or gif.
         """
         app = self._app
         source = known(app, as_text(path))
         if (
             not source
             or not source.is_file()
-            or as_text(how)
-            not in ("compatible", "trim", "exact", "gif", "detext", *media.SOUND_FORMATS)
-        ):
-            return ""
-        if as_text(how) == "detext" and (
-            source.suffix.lower() not in textremoval.PICTURES
-            or not any(textremoval.ready(tier) for tier in textremoval.TIERS)
+            or as_text(how) not in ("compatible", "trim", "exact", "gif", *media.SOUND_FORMATS)
         ):
             return ""
         return app.queue.add(
@@ -344,57 +351,90 @@ class Api:
             end=as_number(end),
         ).id
 
+    # --- the text eraser ---
+
     def text_removal(self) -> Data:
-        """Return which text removal tiers are set up, and whether the best one can run here."""
+        """Return whether the eraser is set up, and how big its download is."""
         return textremoval.status()
 
-    def set_up_text_removal(self, tier: object) -> bool:
-        """Queue setting a text removal tier up: its own Python, packages and models."""
-        chosen = as_text(tier)
-        if chosen not in textremoval.TIERS:
-            return False
+    def set_up_text_removal(self) -> bool:
+        """Queue setting the eraser up: fetching its two models."""
         self._app.queue.add(
-            f"text-removal:{chosen}",
-            chosen,
+            "text-removal",
+            "eraser",
             self._app.options,
             job_kind="setup",
-            title=f"Setting up {'best' if chosen == 'best' else 'quick'} text removal",
+            title="Setting up Remove Text",
         )
         return True
 
-    def remove_text(self, paths: object) -> str:
-        """Queue removing the added text from several pictures, and return the job's id or "".
-
-        They share one job, so the remover loads its models once for all of them.
-        """
-        app = self._app
-        pictures = [
-            str(found)
-            for path in as_ids(paths)
-            if (found := known(app, path))
-            and found.is_file()
-            and found.suffix.lower() in textremoval.PICTURES
-        ]
-        if not pictures or not any(textremoval.ready(tier) for tier in textremoval.TIERS):
-            return ""
-        return app.queue.add(
-            pictures[0],
-            "detext",
-            app.options,
-            job_kind="convert",
-            title=f"{len(pictures)} pictures" if len(pictures) > 1 else Path(pictures[0]).name,
-            pictures=pictures,
-        ).id
-
     def forget_text_removal(self) -> Data:
-        """Delete the text remover and its models, to free the space."""
+        """Delete the eraser's models, to free the space."""
         if any(
             job.job_kind == "setup" and job.status == "running"
             for job in self._app.queue.jobs.values()
         ):
             return textremoval.status()
+        self._app.eraser.close()
         textremoval.forget()
         return textremoval.status()
+
+    def eraser_open(self, path: object) -> Data:
+        """Open a picture in the eraser and start loading its models; {} if it cannot be."""
+        source = known(self._app, as_text(path))
+        if (
+            not source
+            or not source.is_file()
+            or source.suffix.lower() not in eraser.PICTURES
+            or not textremoval.ready()
+        ):
+            return {}
+        return attempt(lambda: self._app.eraser.open(source, textremoval.models()))
+
+    def eraser_suggest(self) -> Data:
+        """Mark what looks laid over the open picture, as a first guess to keep or erase."""
+        return attempt(self._app.eraser.suggest)
+
+    def eraser_stroke(self, points: object, size: object, erase: object, snap: object) -> Data:
+        """Add a stroke to the marked part, or erase one from it.
+
+        Points: x, y, x, y... in the picture's pixels. Size: the brush across, in pixels.
+        """
+        numbers = [
+            float(value)
+            for value in store.items(points)[: 2 * STROKE_POINTS]
+            if isinstance(value, int | float)
+            and not isinstance(value, bool)
+            and math.isfinite(value)
+        ]
+        pairs = list(zip(numbers[::2], numbers[1::2], strict=False))
+        width = min(max(as_number(size, 1.0), 1.0), BRUSH_LARGEST)
+        if not math.isfinite(width):
+            return {}
+        return attempt(
+            lambda: self._app.eraser.stroke(pairs, width, erase=erase is True, snapped=snap is True)
+        )
+
+    def eraser_remove(self) -> Data:
+        """Paint over everything marked."""
+        return attempt(self._app.eraser.remove)
+
+    def eraser_undo(self) -> Data:
+        """Take back the last stroke, suggestion or removal."""
+        return attempt(self._app.eraser.undo)
+
+    def eraser_save(self) -> Data:
+        """Save the edited picture as a copy beside the original, and say where."""
+
+        def save() -> Data:
+            saved = self._app.eraser.save()
+            return {"path": str(saved)} if saved else {}
+
+        return attempt(save)
+
+    def eraser_close(self) -> None:
+        """Let the open picture go."""
+        self._app.eraser.close()
 
     def open_path(self, path: object) -> None:
         """Open a downloaded file in its usual program."""

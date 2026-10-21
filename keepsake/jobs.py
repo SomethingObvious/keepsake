@@ -88,8 +88,6 @@ class Job:
     # A conversion: which stretch of the source, in seconds.
     start: float = 0.0
     end: float = 0.0
-    # Text removal over several pictures at once. The first is also the url.
-    pictures: list[str] = field(default_factory=list)
     started: float = 0.0
     log: collections.deque[str] = field(default_factory=lambda: collections.deque(maxlen=4000))
     # Filled in as it runs.
@@ -170,7 +168,6 @@ class Job:
             "archive": self.archive,
             "ytdlp_extra": self.ytdlp_extra,
             "gallery_extra": self.gallery_extra,
-            "pictures": self.pictures,
             "start": self.start,
             "end": self.end,
             "serial": self.serial,
@@ -189,7 +186,7 @@ class Job:
             value = saved.get(name)
             if isinstance(value, str) and value:
                 setattr(job, name, value)
-        for name in ("ytdlp_extra", "gallery_extra", "pictures"):
+        for name in ("ytdlp_extra", "gallery_extra"):
             setattr(job, name, [str(part) for part in store.items(saved.get(name))])
         for name in ("start", "end"):
             value = saved.get(name)

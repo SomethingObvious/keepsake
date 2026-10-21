@@ -68,3 +68,11 @@ def test_one_download_overrides_only_what_the_preview_offers() -> None:
     assert chosen.notify is True
     assert chosen.concurrency == Options().concurrency
     assert per_job(Options(), "not a record") == Options()
+
+
+def test_the_old_setting_that_removed_text_as_pictures_downloaded_is_read_as_off() -> None:
+    """Text comes off only in the eraser now, so a saved choice of a tier is ignored, quietly."""
+    for tier in ("quick", "best", "off", 7):
+        loaded = Options.load({"remove_text": tier, "quality": "720"})
+        assert loaded == Options(quality="720")
+        assert "remove_text" not in loaded.dump()

@@ -1,6 +1,7 @@
 """The library listing, the archives, the store and the update arithmetic."""
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 from keepsake import library, store
@@ -24,7 +25,7 @@ def test_an_archive_can_forget_so_things_download_again(data: Path) -> None:
     text = data / "yt-dlp-archive.txt"
     text.write_text("youtube a\nyoutube b\n", encoding="utf-8")
     base = data / "gallery-dl-archive.sqlite3"
-    with sqlite3.connect(base) as db:
+    with closing(sqlite3.connect(base)) as db, db:
         db.execute("CREATE TABLE archive (entry TEXT PRIMARY KEY)")
         db.executemany("INSERT INTO archive VALUES (?)", [("x1",), ("x2",)])
     listed = {entry["file"]: entry["entries"] for entry in library.archives()}

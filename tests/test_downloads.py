@@ -3,15 +3,13 @@
 import csv
 import os
 import time
-from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 
 import pytest
 
-from keepsake import textremoval
 from keepsake.downloads import History, Queue, clock, drop_ids, find_zips, next_time, within
-from keepsake.jobs import Job, Outcome
+from keepsake.jobs import Job
 from keepsake.options import Options
 
 
@@ -216,24 +214,3 @@ def test_pictures_gallery_dl_zipped_are_swapped_for_their_zip(tmp_path: Path) ->
     job.files = [str(folder / "1.jpg"), str(folder / "2.jpg")]
     find_zips(job)
     assert job.files == [str(zipped)]
-
-
-def test_picked_pictures_share_one_removal_and_missing_ones_drop_out(
-    queue: Queue, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The remover loads its models once, so a batch is one call with every picture still there."""
-    pictures = [tmp_path / name for name in ("a.jpg", "b.png", "gone.webp")]
-    for picture in pictures[:2]:
-        picture.write_bytes(b"x")
-    seen: list[list[Path]] = []
-
-    def remove(_job: Job, found: Sequence[Path], _tier: str) -> Outcome:
-        seen.append(list(found))
-        return True, ""
-
-    monkeypatch.setattr(textremoval, "remove_text", remove)
-    job = Job(url=str(pictures[0]), mode="detext", options=Options(), job_kind="convert")
-    job.pictures = [str(picture) for picture in pictures]
-    assert queue.convert(job) == (True, "")
-    assert seen == [pictures[:2]]
-    assert job.title == "2 pictures"

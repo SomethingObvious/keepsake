@@ -69,7 +69,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\python\pythonw.exe"; Parameters: """{app}\keepsake.pyw"""; WorkingDir: "{app}"; Description: "Open Keepsake"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-; FFmpeg, Deno and the text remover are Keepsake's own downloads. Settings,
+; FFmpeg, Deno and Remove Text's models are Keepsake's own downloads. Settings,
 ; history and downloaded files are left alone.
 Type: filesandordirs; Name: "{localappdata}\Keepsake"
 #endif

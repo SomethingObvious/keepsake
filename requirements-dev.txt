@@ -2,13 +2,6 @@
 # Pinned: a new linter version changes what passes. Raise them together, on
 # purpose, and fix what the new versions find in the same commit.
 -r requirements.txt
-# What detext's tests run on; detext itself runs in its own environment, whose
-# packages keepsake/textremoval.py pins.
-numpy==2.5.3
-opencv-python==5.0.0.93
-jpeglib==1.0.2
-onnxruntime==1.30.0
-rapidocr==3.9.2
 ruff==0.16.8
 mypy==2.3.1
 basedpyright==1.40.1

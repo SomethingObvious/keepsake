@@ -37,14 +37,10 @@ ignore = [
 # pytest's assert is the test; comparing against literal expected values is
 # the point of a test, not a magic number.
 "tests/**" = ["S101", "PLR2004"]
-# The best tier's painter needs PyTorch, and only the best tier installs it:
-# the quick tier's environment has none, so it is imported where the painter
-# is made, never at the top.
-"detext/klein.py" = ["PLC0415"]
-# The worker cleans pictures one after another: whatever one picture throws
-# (a codec, a model, the graphics card), it is reported for that picture and
-# the rest still get done, so the catch is deliberately every exception.
-"detext/__main__.py" = ["PLC0415", "BLE001"]
+# Importing ONNX Runtime takes seconds, so the eraser imports it on the thread
+# that loads its models, the first time a picture opens, and jpeglib only when
+# a JPEG is saved. At the top, every start of Keepsake would wait for both.
+"keepsake/eraser.py" = ["PLC0415"]
 # Every URL the setup opens is a pinned https constant written in that file.
 "keepsake/textremoval.py" = ["S310"]
 # These open https constants written in the file, or the download links GitHub's
@@ -65,7 +61,7 @@ docstring-code-format = true
 
 [tool.mypy]
 python_version = "3.12"
-files = ["keepsake", "detext", "tests", "scripts"]
+files = ["keepsake", "tests", "scripts"]
 mypy_path = "typings"
 strict = true
 warn_unreachable = true
@@ -87,14 +83,9 @@ enable_error_code = [
 
 [tool.basedpyright]
 pythonVersion = "3.12"
-include = ["keepsake", "detext", "tests", "scripts"]
+include = ["keepsake", "tests", "scripts"]
 stubPath = "typings"
 typeCheckingMode = "strict"
-# detext runs in an environment of its own, and a few of its libraries (torch,
-# diffusers, transformers, rapidocr) are not installed where the checks run:
-# typings/ holds stubs of what it calls, so the calls are checked, and there is
-# no source here for the stubs to sit beside.
-reportMissingModuleSource = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

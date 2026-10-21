@@ -25,7 +25,7 @@ DATA = Path(os.environ.get("APPDATA") or Path.home()) / APP
 # any other checkout is somebody working on it, and is left alone.
 INSTALL = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / APP
 AFTERIMAGE = Path(os.environ.get("LOCALAPPDATA", "")) / "afterimage" / "afterimage-app.exe"
-# The text remover's own Python and its models: gigabytes, so local, not roaming.
+# Remove Text's models: downloads, so local, not roaming.
 TEXT_REMOVAL = Path(os.environ.get("LOCALAPPDATA", "")) / APP / "text-removal"
 # FFmpeg and Deno when Keepsake fetched them, found like any program on the PATH,
 # by Keepsake and by everything it runs.
