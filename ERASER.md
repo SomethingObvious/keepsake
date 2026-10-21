@@ -1,6 +1,6 @@
 # Remove Text
 
-Remove Text takes captions, stickers, @usernames and watermarks off a picture by hand, the way a phone's magic eraser does, and saves a copy beside it. The original is never changed. It runs in Keepsake's own process on the processor, and needs two models, about 46 MB, that setup in Settings downloads.
+Remove Text takes captions, stickers, @usernames and watermarks off a picture by hand, the way a phone's magic eraser does, and saves a copy beside it. The original is never changed. It runs in Keepsake's own process on the processor, and needs two models, about 46 MB, which its button offers to download the first time, as does Settings.
 
 ## Using It
 

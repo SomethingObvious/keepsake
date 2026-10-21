@@ -1961,10 +1961,11 @@
     justify-self: end;
   }
 
-  /* Below this the queue's tools fold to their icons, so they stay on one line. */
+  /* Below this the queue's tools fold to their icons, so they stay on one line. A viewer
+    button marked named keeps its name: Remove Text, whose eraser alone says too little. */
   @media (width < 1100px) {
     .qhead .btn .label,
-    #lightbox .acts .btn .label,
+    #lightbox .acts .btn:not(.named) .label,
     #library .head .btn:last-child .label {
       position: absolute;
       width: 1px;
@@ -4199,9 +4200,12 @@
       display: none;
     }
 
+    /* Downloads is wider than a sixth of a phone, so the bar keeps the end tabs' names off the
+      screen's edge, and the names sit a little closer so the red block still has room. */
     nav {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
+      padding-inline: 6px;
       border-top: 0;
     }
 
@@ -4215,7 +4219,7 @@
       padding: 0 2px;
       border-bottom: 0;
       font-stretch: 75%;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
     }
 
     .tab + .tab {
