@@ -14,6 +14,7 @@ from PIL import Image
 
 from keepsake import APP, cookies, paths, process, store, tools, winapi
 from keepsake.downloads import Queue
+from keepsake.eraser import Editor
 from keepsake.jobs import Job
 from keepsake.links import extract_urls, kind, site_of
 from keepsake.options import BUILT_IN_PRESETS, MODES, Options, preset_values, with_preset
@@ -54,6 +55,7 @@ class App:
         self.queue = Queue(lambda: self.options, self.finished, self.idle)
         self.updater = Updater()
         self.subs = Subscriptions()
+        self.eraser = Editor()
         self.window: webview.Window | None = None
         self.icon: pystray.Icon | None = None
         self.hwnd = 0

@@ -362,8 +362,7 @@ class Queue:
             job.stage = ""
         elif ok:
             job.status, job.pct = "done", 100.0
-            if job.mode != "detext":  # its stage says how many pictures lost text
-                job.stage = "Nothing new" if not job.files and job.job_kind == "download" else ""
+            job.stage = "Nothing new" if not job.files and job.job_kind == "download" else ""
             if job.skipped and not job.files and job.job_kind == "download":
                 self.name_repeat(job)
             if job.errors:  # what did arrive is kept, so say why the rest did not
@@ -478,12 +477,6 @@ class Queue:
                 self.make_playable(job, Path(name))
         if job.options.zip:
             find_zips(job)
-        pictures = [Path(n) for n in job.files if Path(n).suffix.lower() in textremoval.PICTURES]
-        if job.options.remove_text in textremoval.TIERS and pictures and not job.stop:
-            job.stage = "Removing added text"
-            _, message = textremoval.remove_text(job, pictures, job.options.remove_text)
-            if message:
-                job.log.append(message)
         if job.options.strip_metadata and not job.stop:
             self.remove_metadata(job)
             drop_ids(job)
@@ -588,11 +581,6 @@ class Queue:
             ),
             "gif": ("gif", ".gif", lambda target: media.gif_command(source, target, *span)),
         }
-        if job.mode == "detext":
-            pictures = [Path(name) for name in job.pictures if Path(name).is_file()] or [source]
-            job.title = source.name if len(pictures) == 1 else f"{len(pictures)} pictures"
-            job.stage = "Removing added text"
-            return textremoval.remove_text(job, pictures, textremoval.chosen(job))
         if job.mode not in makers:
             return False, f"ERROR: unknown conversion {job.mode}"
         note, suffix, command = makers[job.mode]

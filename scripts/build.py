@@ -24,7 +24,7 @@ BUILD, DIST = ROOT / "build", ROOT / "dist"
 STAGE = BUILD / "Keepsake"
 PYTHON = "3.12.10"
 PYTHON_URL = f"https://www.nuget.org/api/v2/package/python/{PYTHON}"
-APP_PARTS = ("keepsake", "ui", "assets", "detext", "launch.pyw", "requirements.txt", "LICENSE")
+APP_PARTS = ("keepsake", "ui", "assets", "launch.pyw", "requirements.txt", "LICENSE")
 # Headers and import libraries are only for compiling, which nothing here does.
 UNUSED = ("include", "libs")
 ISCC = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Inno Setup 6" / "ISCC.exe"
@@ -80,8 +80,7 @@ def app() -> None:
     for part in APP_PARTS:
         source = ROOT / part
         if source.is_dir():
-            # The text remover's network is an optional download, fetched when it is set up.
-            ignore = shutil.ignore_patterns("__pycache__", "*.pyc", "*.onnx")
+            ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
             shutil.copytree(source, target / part, ignore=ignore)
         else:
             target.mkdir(parents=True, exist_ok=True)

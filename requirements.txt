@@ -4,3 +4,8 @@ pywebview>=6.2.1
 pystray>=0.19.5
 yt-dlp[default,curl-cffi]>=2026.8.19
 gallery-dl>=1.32.13
+# The text eraser: pixels, its two models, and JPEG blocks.
+numpy>=2.5.3
+pillow>=12.3.0
+onnxruntime>=1.30.0
+jpeglib>=1.0.2

@@ -67,7 +67,6 @@ interface Settings {
   write_metadata: boolean;
   zip: boolean;
   ugoira: string;
-  remove_text: string;
   preview_playback: string;
   background_play: boolean;
   media_controls: boolean;
@@ -345,12 +344,32 @@ interface SubForm {
 }
 
 interface TextRemoval {
-  quick: boolean;
-  best: boolean;
-  card: string;
-  best_possible: boolean;
-  quick_size: number;
-  best_size: number;
+  ready: boolean;
+  size: number;
+}
+
+/** A rectangle of the eraser's picture to redraw: the marked part, and the pixels when they changed. */
+interface EraserPatch {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  mask: string;
+  picture: string;
+}
+
+/** What an eraser call answers: a picture opened, a rectangle, a saved copy, nothing ({}) or a problem. */
+interface EraserAnswer {
+  width?: number;
+  height?: number;
+  picture?: string;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  mask?: string;
+  path?: string;
+  error?: string;
 }
 
 interface KeepsakeApi {
@@ -380,9 +399,15 @@ interface KeepsakeApi {
   library(): Promise<LibFile[]>;
   convert(path: string, how: string, start: number, end: number): Promise<string>;
   text_removal(): Promise<TextRemoval>;
-  set_up_text_removal(tier: string): Promise<boolean>;
+  set_up_text_removal(): Promise<boolean>;
   forget_text_removal(): Promise<TextRemoval>;
-  remove_text(paths: string[]): Promise<string>;
+  eraser_open(path: string): Promise<EraserAnswer>;
+  eraser_suggest(): Promise<EraserAnswer>;
+  eraser_stroke(points: number[], size: number, erase: boolean, snap: boolean): Promise<EraserAnswer>;
+  eraser_remove(): Promise<EraserAnswer>;
+  eraser_undo(): Promise<EraserAnswer>;
+  eraser_save(): Promise<EraserAnswer>;
+  eraser_close(): Promise<null>;
   open_path(path: string): Promise<null>;
   reveal(path: string): Promise<"shown" | "folder" | "gone">;
   open_directory(path: string): Promise<boolean>;

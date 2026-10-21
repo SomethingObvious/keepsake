@@ -113,9 +113,6 @@ class Options:
     write_metadata: bool = False
     zip: bool = False
     ugoira: str = "copy"  # copy (MKV, frames untouched) | off (the zip) | webm | mp4 | gif
-    # Take text added on top of pictures (captions, stickers, watermarks) off
-    # them, keeping text that is part of the picture. Off until set up.
-    remove_text: str = "off"  # off | quick | best
 
     # --- sign-in, network and politeness ---
     cookies: str = "auto"  # none | auto | <browser> | file

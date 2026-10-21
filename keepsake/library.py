@@ -4,6 +4,7 @@ import hashlib
 import sqlite3
 import urllib.request
 import uuid
+from contextlib import closing
 from pathlib import Path
 
 from keepsake import APP, paths, store
@@ -79,7 +80,8 @@ def entries(path: Path) -> list[str]:
     if path.suffix == ".txt":
         return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     try:
-        with sqlite3.connect(f"file:{path}?mode=ro", uri=True) as db:
+        # A connection's own `with` commits but leaves it open; closing() closes it.
+        with closing(sqlite3.connect(f"file:{path}?mode=ro", uri=True)) as db:
             return [str(row[0]) for row in db.execute("SELECT entry FROM archive")]
     except sqlite3.Error:
         return []
@@ -93,7 +95,7 @@ def forget(path: Path, lines: list[str]) -> int:
         removed = len(entries(path)) - len(kept)
         path.write_text("".join(f"{line}\n" for line in kept), encoding="utf-8")
         return removed
-    with sqlite3.connect(path) as db:
+    with closing(sqlite3.connect(path)) as db, db:
         cursor = db.executemany(
             "DELETE FROM archive WHERE entry = ?", [(line,) for line in unwanted]
         )

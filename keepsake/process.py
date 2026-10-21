@@ -7,9 +7,9 @@ from pathlib import Path
 from keepsake import paths
 
 NO_WINDOW = subprocess.CREATE_NO_WINDOW
-# Downloads, conversions and the text remover run beneath whatever the person
-# is doing, so a slow computer stays usable while they work. What they start
-# inherits it: ffmpeg under yt-dlp, and the judge's server under the remover.
+# Downloads and conversions run beneath whatever the person is doing, so a
+# slow computer stays usable while they work. What they start inherits it:
+# ffmpeg under yt-dlp.
 BACKGROUND = NO_WINDOW | subprocess.BELOW_NORMAL_PRIORITY_CLASS
 # UTF-8 both ways: a title in Japanese or a filename with an emoji has to
 # survive the trip through a pipe.
