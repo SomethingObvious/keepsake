@@ -3088,6 +3088,7 @@ function bindLibrary() {
       openBox(index);
     }
   });
+  bindHold();
   on($("#lib-select"), "click", () => {
     S.libPicking = !S.libPicking;
     if (!S.libPicking) {
@@ -3132,6 +3133,124 @@ function pickFiles(index, range) {
   S.libLast = index;
   S.libPicking = true;
   renderLibrary();
+}
+
+/** Whether the library's files are in front, with no dialog over them and not its playlists. */
+function browsingLibrary() {
+  return S.tab === "library" && S.libFilter !== "lists" && !document.querySelector("dialog[open]");
+}
+
+/** How long a finger or the mouse button stays down on a tile before it picks, in milliseconds. */
+const HOLD = 450;
+
+/**
+ * Holding a tile picks it, as in a phone's gallery, and sliding on from there picks every tile
+ * between it and the one under the finger. A held tile already picked unpicks them instead.
+ */
+function bindHold() {
+  const grid = $("#grid");
+  /** @type {{ pointer: number, x: number, y: number, from: number, timer: number } | null} */
+  let press = null;
+  /** @type {{ before: Set<string>, adding: boolean } | null} */
+  let slide = null;
+  let swallow = false;
+  /** @param {number} x @param {number} y */
+  const tileAt = (x, y) => {
+    const tile = document.elementFromPoint(x, y)?.closest("#grid .tile");
+    return tile instanceof HTMLElement ? Number(tile.dataset["i"]) : -1;
+  };
+  /** @param {number} to */
+  const slideTo = (to) => {
+    if (!press || !slide) {
+      return;
+    }
+    S.libPicked = new Set(slide.before);
+    for (const f of libItems().slice(Math.min(press.from, to), Math.max(press.from, to) + 1)) {
+      if (slide.adding) {
+        S.libPicked.add(f.path);
+      } else {
+        S.libPicked.delete(f.path);
+      }
+    }
+    S.libLast = to;
+    paintTiles();
+  };
+  const end = () => {
+    window.clearTimeout(press?.timer);
+    press = null;
+    slide = null;
+  };
+  on(grid, "pointerdown", (event) => {
+    swallow = false;
+    const tile = event.target instanceof Element ? event.target.closest(".tile") : null;
+    if (!(tile instanceof HTMLElement) || event.button !== 0 || event.ctrlKey || event.shiftKey) {
+      return;
+    }
+    const from = Number(tile.dataset["i"]);
+    const timer = window.setTimeout(() => {
+      const f = libItems()[from];
+      if (!press || !f) {
+        return;
+      }
+      slide = { before: new Set(S.libPicked), adding: !S.libPicked.has(f.path) };
+      S.libPicking = true;
+      swallow = true;
+      slideTo(from);
+    }, HOLD);
+    press = { pointer: event.pointerId, x: event.clientX, y: event.clientY, from, timer };
+  });
+  on(grid, "pointermove", (event) => {
+    if (event.pointerId !== press?.pointer) {
+      return;
+    }
+    if (slide) {
+      const to = tileAt(event.clientX, event.clientY);
+      if (to >= 0) {
+        slideTo(to);
+      }
+    } else if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) {
+      // Moving before the hold is up is a scroll, not a pick.
+      end();
+    }
+  });
+  for (const type of /** @type {const} */ (["pointerup", "pointercancel"])) {
+    on(grid, type, end);
+  }
+  // Once a hold has picked, the finger slides to pick more rather than scrolling the page.
+  on(grid, "touchmove", (event) => {
+    if (slide) {
+      event.preventDefault();
+    }
+  });
+  on(grid, "contextmenu", (event) => {
+    if (press || swallow) {
+      event.preventDefault();
+    }
+  });
+  // A thumbnail dragged with the mouse would otherwise carry off the picture instead of sliding.
+  on(grid, "dragstart", (event) => {
+    event.preventDefault();
+  });
+  // The button let go after a hold is not also a click that opens or unpicks the tile.
+  grid.addEventListener("click", (event) => {
+    if (swallow) {
+      swallow = false;
+      event.stopPropagation();
+    }
+  }, true);
+}
+
+/** The picks shown on the tiles already drawn, without drawing them again. */
+function paintTiles() {
+  const items = libItems();
+  for (const tile of $$("#grid .tile")) {
+    const f = items[Number(tile.dataset["i"])];
+    const picked = Boolean(f && S.libPicked.has(f.path));
+    tile.classList.toggle("picked", picked);
+    tile.setAttribute("aria-pressed", String(picked));
+    tile.setAttribute("aria-label", `Pick ${f?.name ?? ""}`);
+  }
+  paintPicks();
 }
 
 /** @type {number | undefined} */
@@ -5605,6 +5724,12 @@ function bindKeys() {
         S.picked.add(j.id);
       }
       renderJobs();
+    } else if (event.ctrlKey && key === "a" && !typing && browsingLibrary()) {
+      event.preventDefault();
+      S.libPicking = true;
+      $("#lib-all").click();
+    } else if (event.key === "Escape" && !typing && browsingLibrary() && S.libPicking) {
+      $("#lib-none").click();
     } else if (event.ctrlKey && key === "v" && !typing) {
       show("downloads");
       urls().focus();
