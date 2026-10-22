@@ -437,8 +437,34 @@ function textRemovalReady() {
   return Boolean(S.textRemoval?.ready);
 }
 
+/** The newest setup of Remove Text in the queue, if there is one. */
+function textRemovalJob() {
+  return S.state?.jobs.filter((j) => j.job_kind === "setup" && j.url.startsWith("text-removal")).at(-1);
+}
+
 function settingUpTextRemoval() {
-  return S.state?.jobs.some((j) => j.job_kind === "setup" && j.url.startsWith("text-removal") && (j.status === "queued" || j.status === "running")) ?? false;
+  const job = textRemovalJob();
+  return job?.status === "queued" || job?.status === "running";
+}
+
+/** Why the newest setup failed, in plain words, or "" when it has not. */
+function textRemovalFailure() {
+  const job = textRemovalJob();
+  return job?.status === "failed" && !textRemovalReady() ? job.said || "Its download stopped part of the way. Check the connection, then Retry." : "";
+}
+
+/**
+ * Draws how much of the download has arrived, in its dialog or in Settings.
+ * @param {HTMLElement} place @param {number} share how much, out of 100
+ */
+function paintSetupBar(place, share) {
+  const size = S.textRemoval?.size ?? 0;
+  const pct = Math.max(0, Math.min(100, share));
+  const words = `${bytes((pct / 100) * size)} of ${bytes(size)}`;
+  const bar = /** @type {HTMLProgressElement} */ ($(".setup-bar", place));
+  bar.value = pct;
+  bar.setAttribute("aria-valuetext", words);
+  $(".setup-amount", place).textContent = words;
 }
 
 /** Remove Text is optional. Its button is on every still picture, and offers the download until it is set up. */
@@ -450,9 +476,12 @@ function paintTextRemoval() {
     return;
   }
   const busy = settingUpTextRemoval();
+  const failure = textRemovalFailure();
   let about = "Paint over a picture's captions, stickers or watermarks in the viewer, and a copy is saved beside it without them.";
   if (busy) {
-    about += " It is being set up: follow it in the queue.";
+    about += " Downloading its models.";
+  } else if (failure) {
+    about += ` Setup failed: ${failure}`;
   } else if (t.ready) {
     about += " Open a picture in the library and press T.";
   } else {
@@ -460,12 +489,75 @@ function paintTextRemoval() {
   }
   $("#detext-about").textContent = about;
   $("#detext-setup").hidden = busy || t.ready;
+  $("#detext-setup").textContent = failure ? "Retry" : "Set Up";
   $("#detext-forget").hidden = busy || !t.ready;
+  $("#detext-progress").hidden = !busy;
+  if (busy) {
+    paintSetupBar($("#detext-progress"), textRemovalJob()?.pct ?? 0);
+  }
+  paintSetupDialog();
+}
+
+/** The picture Remove Text was pressed on, which opens in it once the setup that press started is done. @type {LibFile | null} */
+let setupFor = null;
+
+/** The setup dialog: the offer, the download as it arrives, ready, or what went wrong with Retry. */
+function paintSetupDialog() {
+  const dialog = /** @type {HTMLDialogElement} */ ($("#setup-text"));
+  const t = S.textRemoval;
+  if (!dialog.open || !t) {
+    return;
+  }
+  const failure = textRemovalFailure();
+  const state = t.ready ? "ready" : settingUpTextRemoval() ? "busy" : failure ? "failed" : "offer";
+  dialog.dataset["state"] = state;
+  /** @type {Record<string, [string, string, string, string]>} */
+  const words = {
+    offer: ["Set Up Remove Text", `Remove Text needs a one-time download of ${bytes(t.size)} before it can paint text off pictures.`, "Set Up", "Not Now"],
+    busy: ["Setting Up Remove Text", "Its two models are downloading, and hiding this does not stop them.", "", "Hide"],
+    ready: ["Remove Text Is Ready", "Its models are downloaded and checked, so it works from now on.", "Open Remove Text", "Close"],
+    failed: ["Setup Failed", failure, "Retry", "Close"],
+  };
+  const [title, say, go, close] = words[state] ?? words["offer"] ?? ["", "", "", ""];
+  $("#setup-text-title").textContent = title;
+  $("#setup-text-say").textContent = say;
+  $("#setup-text-progress").hidden = state !== "busy" && state !== "ready";
+  paintSetupBar($("#setup-text-progress"), state === "ready" ? 100 : textRemovalJob()?.pct ?? 0);
+  const button = $("#setup-text-go");
+  button.hidden = !go;
+  button.textContent = go;
+  $("#setup-text-close").textContent = close;
 }
 
 async function refreshTextRemoval() {
   S.textRemoval = await api().text_removal();
   paintTextRemoval();
+  const f = setupFor;
+  if (!S.textRemoval.ready || !f) {
+    return;
+  }
+  setupFor = null;
+  // The picture it was asked for is still on screen, so Remove Text opens on it by itself.
+  if (current() === f && !$("#lightbox").hidden) {
+    window.setTimeout(() => {
+      const dialog = /** @type {HTMLDialogElement} */ ($("#setup-text"));
+      if (current() === f && !$("#lightbox").hidden && $("#eraser").hidden) {
+        dialog.close();
+        openEraser(f).catch(report);
+      }
+    }, READY_PAUSE);
+  }
+}
+
+/** How long Ready stays in sight before Remove Text opens by itself, in milliseconds. */
+const READY_PAUSE = 900;
+
+/** Shows the setup dialog for a picture whose Remove Text was pressed. @param {LibFile | null} f */
+function offerTextRemoval(f) {
+  setupFor = f;
+  const dialog = /** @type {HTMLDialogElement} */ ($("#setup-text"));
+  dialog.showModal();
+  paintSetupDialog();
 }
 
 /** @type {number | undefined} */
@@ -480,7 +572,6 @@ function disarmForget() {
 
 async function setUpTextRemoval() {
   await api().set_up_text_removal();
-  toast("Setting it up: follow it in the queue");
   await poll();
   paintTextRemoval();
 }
@@ -504,6 +595,19 @@ function bindTextRemoval() {
     toast(textRemovalReady() ? "It is being set up: try again when that is done" : "Uninstalled");
   });
   on($("#lb-erase"), "click", removeTextHere);
+  on($("#setup-text-go"), "click", async () => {
+    const dialog = /** @type {HTMLDialogElement} */ ($("#setup-text"));
+    if (dialog.dataset["state"] === "ready") {
+      dialog.close();
+      const f = current();
+      if (f && !$("#lightbox").hidden) {
+        await openEraser(f);
+      }
+      return;
+    }
+    setupFor ??= $("#lightbox").hidden ? null : current() ?? null;
+    await setUpTextRemoval();
+  });
   bindEraser();
 }
 
@@ -512,15 +616,247 @@ async function removeTextHere() {
   if (f?.kind !== "image" || !DETEXT_TYPES.test(f.name)) {
     return;
   }
-  if (settingUpTextRemoval()) {
-    toast("Remove Text is being set up: try again when that is done");
-    return;
-  }
   if (!textRemovalReady()) {
-    toast(`Remove Text is an optional download of about ${bytes(S.textRemoval?.size)}`, { label: "Set It Up", run: setUpTextRemoval });
+    offerTextRemoval(f);
     return;
   }
   await openEraser(f);
+}
+
+/* ============================== zoom ============================== */
+
+/** How far a picture zooms past fitting its stage, and how close a double press takes it. */
+const ZOOM_MOST = 8;
+const ZOOM_DOUBLE = 2.5;
+/** How fast the wheel zooms, for each pixel it turns. */
+const ZOOM_WHEEL = 0.0015;
+/** How far a press can travel and still be a press rather than a drag, in pixels on screen. */
+const DRAG_SLOP = 4;
+/** How soon and how close a second tap makes a double tap, as Android counts one. */
+const DOUBLE_TAP_MS = 300;
+const DOUBLE_TAP_SLOP = 30;
+
+/**
+ * Zoom for a picture inside a stage that clips it. Two fingers pinch it and move it. A press
+ * drags it once it is bigger than the stage: anywhere on it in the viewer, and with the middle
+ * button in Remove Text, where a press paints. The wheel zooms in the viewer; in Remove Text it
+ * moves the picture, and Ctrl with the wheel zooms, as a touchpad's pinch does. A double press
+ * in the viewer goes between fitting and close up. The picture is scaled by a transform and held
+ * so that wherever it is bigger than the stage it covers it, so it can never be lost off an edge.
+ * While zoomed, a readout says how far, and pressing it fits the picture again.
+ * @param {HTMLElement} stage the box it zooms in, which clips it
+ * @param {() => HTMLElement | null} target what zooms, looked up each time as the viewer redraws it
+ * @param {{ editor: boolean, onGesture?: () => void, onZoom?: () => void }} how
+ */
+function zoomable(stage, target, how) {
+  const view = { scale: 1, x: 0, y: 0 };
+  /** Where each finger on the stage is. @type {Map<number, { x: number, y: number }>} */
+  const fingers = new Map();
+  /** @type {{ distance: number, scale: number, x: number, y: number, mid: { x: number, y: number } } | null} */
+  let pinch = null;
+  /** @type {{ id: number, x: number, y: number, fromX: number, fromY: number } | null} */
+  let drag = null;
+  /** Whether the press now ending moved the picture, so its click is not a press on what is under it. */
+  let moved = false;
+  /** The last finger's tap on the picture, for a double tap, and what pressed last, as a mouse double-clicks. */
+  let lastTap = { at: 0, x: 0, y: 0 };
+  let pressedWith = "mouse";
+  let onPicture = false;
+
+  /** A point on screen, measured from the middle of the stage. @param {number} x @param {number} y */
+  function fromMiddle(x, y) {
+    const box = stage.getBoundingClientRect();
+    return { x: x - (box.left + box.width / 2), y: y - (box.top + box.height / 2) };
+  }
+
+  function readout() {
+    const found = stage.querySelector(".zoom-level");
+    if (found instanceof HTMLButtonElement) {
+      return found;
+    }
+    const button = Object.assign(document.createElement("button"), { type: "button", className: "zoom-level", title: "Fit the picture again" });
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      zoomTo(1, { x: 0, y: 0 }, true);
+    });
+    stage.append(button);
+    return button;
+  }
+
+  /** Holds the picture inside what it may cover and draws it there. @param {boolean} [ease] */
+  function paint(ease = false) {
+    const picture = target();
+    if (!picture) {
+      return;
+    }
+    const spareX = Math.max(0, (picture.offsetWidth * view.scale - stage.clientWidth) / 2);
+    const spareY = Math.max(0, (picture.offsetHeight * view.scale - stage.clientHeight) / 2);
+    view.x = Math.min(spareX, Math.max(-spareX, view.x));
+    view.y = Math.min(spareY, Math.max(-spareY, view.y));
+    picture.classList.toggle("easing", ease && !matchMedia("(prefers-reduced-motion: reduce)").matches);
+    picture.style.transform = view.scale > 1 ? `translate(${String(view.x)}px, ${String(view.y)}px) scale(${String(view.scale)})` : "";
+    stage.classList.toggle("zoomed", view.scale > 1);
+    const button = readout();
+    const shown = `${String(Math.round(view.scale * 100))}%`;
+    button.hidden = view.scale === 1;
+    button.textContent = shown;
+    button.setAttribute("aria-label", `${shown}, fit the picture again`);
+    how.onZoom?.();
+  }
+
+  /**
+   * Zooms to `scale`, keeping the point `at` (from the middle of the stage) where it is on screen.
+   * @param {number} scale @param {{ x: number, y: number }} at @param {boolean} [ease]
+   */
+  function zoomTo(scale, at, ease = false) {
+    const next = Math.min(ZOOM_MOST, Math.max(1, scale));
+    view.x = next === 1 ? 0 : at.x - (at.x - view.x) * (next / view.scale);
+    view.y = next === 1 ? 0 : at.y - (at.y - view.y) * (next / view.scale);
+    view.scale = next;
+    paint(ease);
+  }
+
+  function startPinch() {
+    const [a, b] = [...fingers.values()];
+    if (!a || !b) {
+      return;
+    }
+    const mid = fromMiddle((a.x + b.x) / 2, (a.y + b.y) / 2);
+    pinch = { distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), scale: view.scale, x: view.x, y: view.y, mid };
+    drag = null;
+    stage.classList.remove("panning");
+    how.onGesture?.();
+  }
+
+  // Listening first, so Remove Text knows a second finger has landed before that finger can start a stroke.
+  stage.addEventListener("pointerdown", (event) => {
+    moved = false;
+    if (!target() || (event.target instanceof Element && event.target.closest("button"))) {
+      return;
+    }
+    pressedWith = event.pointerType;
+    onPicture = event.target === target();
+    if (event.pointerType === "touch") {
+      fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (fingers.size === 2) {
+        startPinch();
+        return;
+      }
+    }
+    const dragsHere = how.editor ? event.button === 1 : event.button === 0 && view.scale > 1 && event.target === target();
+    if (dragsHere && fingers.size < 2) {
+      event.preventDefault();
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, fromX: view.x, fromY: view.y };
+      stage.setPointerCapture(event.pointerId);
+      stage.classList.add("panning");
+    }
+  }, { capture: true });
+
+  stage.addEventListener("pointermove", (event) => {
+    if (fingers.has(event.pointerId)) {
+      fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+    const [a, b] = [...fingers.values()];
+    if (pinch && a && b) {
+      const scale = Math.min(ZOOM_MOST, Math.max(1, (pinch.scale * Math.hypot(a.x - b.x, a.y - b.y)) / pinch.distance));
+      const mid = fromMiddle((a.x + b.x) / 2, (a.y + b.y) / 2);
+      view.x = mid.x - (pinch.mid.x - pinch.x) * (scale / pinch.scale);
+      view.y = mid.y - (pinch.mid.y - pinch.y) * (scale / pinch.scale);
+      view.scale = scale;
+      moved = true;
+      paint();
+    } else if (drag?.id === event.pointerId) {
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      moved ||= Math.hypot(dx, dy) > DRAG_SLOP;
+      view.x = drag.fromX + dx;
+      view.y = drag.fromY + dy;
+      paint();
+    }
+  }, { capture: true });
+
+  /** A finger that tapped the picture without moving it; a second tap soon after and close by zooms. @param {PointerEvent} event */
+  function tapped(event) {
+    if (how.editor || !onPicture || event.pointerType !== "touch" || moved || pinch || fingers.size > 0 || event.type !== "pointerup") {
+      return;
+    }
+    const near = Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) < DOUBLE_TAP_SLOP;
+    if (event.timeStamp - lastTap.at < DOUBLE_TAP_MS && near) {
+      lastTap = { at: 0, x: 0, y: 0 };
+      zoomTo(view.scale > 1 ? 1 : ZOOM_DOUBLE, fromMiddle(event.clientX, event.clientY), true);
+    } else {
+      lastTap = { at: event.timeStamp, x: event.clientX, y: event.clientY };
+    }
+  }
+
+  /** @param {PointerEvent} event */
+  function lift(event) {
+    const wasPicture = fingers.has(event.pointerId) || drag?.id === event.pointerId;
+    fingers.delete(event.pointerId);
+    if (fingers.size < 2) {
+      pinch = null;
+    }
+    if (drag?.id === event.pointerId) {
+      drag = null;
+      stage.classList.remove("panning");
+    }
+    if (wasPicture) {
+      tapped(event);
+    }
+  }
+  stage.addEventListener("pointerup", lift, { capture: true });
+  stage.addEventListener("pointercancel", lift, { capture: true });
+
+  // A press that moved the picture is not a press on what lies under it, so it never closes the viewer.
+  stage.addEventListener("click", (event) => {
+    if (moved) {
+      event.stopPropagation();
+      moved = false;
+    }
+  }, { capture: true });
+
+  stage.addEventListener("wheel", (event) => {
+    if (!target()) {
+      return;
+    }
+    if (!how.editor || event.ctrlKey) {
+      event.preventDefault();
+      zoomTo(view.scale * Math.exp(-event.deltaY * ZOOM_WHEEL), fromMiddle(event.clientX, event.clientY));
+    } else if (view.scale > 1) {
+      event.preventDefault();
+      view.x -= event.deltaX;
+      view.y -= event.deltaY;
+      paint();
+    }
+  }, { passive: false });
+
+  // A mouse's double-click; a finger's double tap is counted above, the way Android counts one.
+  if (!how.editor) {
+    stage.addEventListener("dblclick", (event) => {
+      if (pressedWith !== "touch" && event.target === target()) {
+        zoomTo(view.scale > 1 ? 1 : ZOOM_DOUBLE, fromMiddle(event.clientX, event.clientY), true);
+      }
+    });
+  }
+
+  new ResizeObserver(() => {
+    paint();
+  }).observe(stage);
+
+  return {
+    /** Back to fitting the stage, as for a new picture. */
+    reset() {
+      Object.assign(view, { scale: 1, x: 0, y: 0 });
+      fingers.clear();
+      pinch = null;
+      drag = null;
+      paint();
+    },
+    /** Whether two fingers are on the stage, zooming rather than painting. */
+    busy() {
+      return fingers.size > 1;
+    },
+  };
 }
 
 /* ============================== the eraser ============================== */
@@ -547,8 +883,14 @@ const er = {
 
 /** @type {number | undefined} */
 let leaveTimer;
-/** Where the pointer is over the picture, on screen, for the brush's outline. @type {{ x: number, y: number } | null} */
+/** Where the pointer is over the stage, on screen, for the brush's outline. @type {{ x: number, y: number } | null} */
 let ringAt = null;
+/** Remove Text's zoom, made when the window is bound. @type {ReturnType<typeof zoomable> | null} */
+let eraserZoom = null;
+/** How long one finger waits to see whether a second lands to zoom, before it paints, in milliseconds. */
+const SECOND_FINGER = 120;
+/** A finger that may yet be the first of two: where it has been, kept to paint once it is alone. @type {{ id: number, at: { clientX: number, clientY: number }[], timer: number } | null} */
+let firstFinger = null;
 
 /** How much [ and ] change the brush, in pixels on screen. */
 const BRUSH_STEP = 8;
@@ -640,6 +982,7 @@ function fitEraser() {
   const sheet = $("#er-sheet");
   sheet.style.width = `${String(Math.max(1, Math.floor(er.width * scale)))}px`;
   sheet.style.height = `${String(Math.max(1, Math.floor(er.height * scale)))}px`;
+  eraserZoom?.reset();
 }
 
 /** The brush across, in the picture's pixels: the slider is in pixels on screen. */
@@ -742,6 +1085,7 @@ async function closeEraser() {
   disarmLeave();
   er.open = false;
   er.points = [];
+  eraserZoom?.reset();
   $("#eraser").hidden = true;
   for (const canvas of [picCanvas(), maskCanvas(), firstCanvas()]) {
     canvas.width = 0;
@@ -786,12 +1130,13 @@ function paintRing() {
   ring.style.transform = `translate(${String(ringAt.x)}px, ${String(ringAt.y)}px) translate(-50%, -50%)`;
 }
 
-/** Where the pointer is in the picture's pixels. @param {PointerEvent} event */
+/** Where the pointer is in the picture's pixels, zoomed or not. @param {{ clientX: number, clientY: number }} event */
 function pointAt(event) {
   const box = maskCanvas().getBoundingClientRect();
+  const stage = $("#er-stage").getBoundingClientRect();
   const scale = er.width / Math.max(1, box.width);
-  ringAt = { x: event.clientX - box.left, y: event.clientY - box.top };
-  return { x: ringAt.x * scale, y: ringAt.y * scale };
+  ringAt = { x: event.clientX - stage.left, y: event.clientY - stage.top };
+  return { x: (event.clientX - box.left) * scale, y: (event.clientY - box.top) * scale };
 }
 
 /** Draws the stroke as it is painted, before Python snaps it. @param {number} x @param {number} y */
@@ -898,26 +1243,92 @@ function eraserKeys(event) {
   }
 }
 
+/**
+ * Starts a stroke where a pointer went down, and paints on through where it has been since.
+ * @param {number} id @param {{ clientX: number, clientY: number }[]} at
+ */
+function startStroke(id, at) {
+  maskCanvas().setPointerCapture(id);
+  er.points = [];
+  for (const place of at) {
+    const { x, y } = pointAt(place);
+    paintTo(x, y);
+  }
+}
+
+/** A second finger landed, so the first was the start of a pinch and paints nothing. */
+function fingersZoom() {
+  if (firstFinger) {
+    window.clearTimeout(firstFinger.timer);
+    firstFinger = null;
+  } else if (er.points.length) {
+    // It had been painting alone for long enough to mean it, so that much counts.
+    endStroke().catch(report);
+  }
+  ringAt = null;
+  paintRing();
+}
+
+/** A finger that lifts before the wait is over was a dab, which paints where it was. @param {PointerEvent} event */
+async function liftStroke(event) {
+  const dab = firstFinger?.id === event.pointerId ? firstFinger : null;
+  if (dab) {
+    window.clearTimeout(dab.timer);
+    firstFinger = null;
+    startStroke(event.pointerId, dab.at);
+  }
+  await endStroke();
+}
+
 function bindEraser() {
   const mask = maskCanvas();
+  eraserZoom = zoomable($("#er-stage"), () => (er.open ? $("#er-sheet") : null), { editor: true, onGesture: fingersZoom, onZoom: paintRing });
   on(mask, "pointerdown", (event) => {
-    if (event.button !== 0 || !er.open) {
+    if (event.button !== 0 || !er.open || eraserZoom?.busy()) {
       return;
     }
-    mask.setPointerCapture(event.pointerId);
-    er.points = [];
-    const { x, y } = pointAt(event);
-    paintTo(x, y);
+    const place = { clientX: event.clientX, clientY: event.clientY };
+    if (event.pointerType !== "touch") {
+      startStroke(event.pointerId, [place]);
+      return;
+    }
+    const id = event.pointerId;
+    firstFinger = {
+      id,
+      at: [place],
+      timer: window.setTimeout(() => {
+        const alone = firstFinger;
+        firstFinger = null;
+        if (alone && !eraserZoom?.busy()) {
+          startStroke(id, alone.at);
+        }
+      }, SECOND_FINGER),
+    };
   });
   on(mask, "pointermove", (event) => {
-    const { x, y } = pointAt(event);
+    const place = { clientX: event.clientX, clientY: event.clientY };
+    if (firstFinger?.id === event.pointerId) {
+      firstFinger.at.push(place);
+      return;
+    }
+    if (eraserZoom?.busy()) {
+      return;
+    }
+    const { x, y } = pointAt(place);
     paintRing();
     if (er.points.length && mask.hasPointerCapture(event.pointerId)) {
       paintTo(x, y);
     }
   });
-  on(mask, "pointerup", endStroke);
-  on(mask, "pointercancel", endStroke);
+  on(mask, "pointerup", liftStroke);
+  on(mask, "pointercancel", async (event) => {
+    if (firstFinger?.id === event.pointerId) {
+      window.clearTimeout(firstFinger.timer);
+      firstFinger = null;
+      return;
+    }
+    await endStroke();
+  });
   on(mask, "pointerleave", () => {
     ringAt = null;
     paintRing();
@@ -1043,6 +1454,29 @@ function ask(title, value = "") {
 /* ============================== pages ============================== */
 
 const PAGES = ["downloads", "search", "subscriptions", "library", "history", "settings"];
+
+/**
+ * On a phone the six tabs share the width. Where any name would not fit inside its tab, at a large
+ * text size or on the narrowest screens, every name is cut together and the icons stand for them,
+ * since a name is never shrunk below 11px. Measured, because the text size Android adds reaches the
+ * names but not the units a container query measures in. The rail on a desktop never cuts.
+ */
+function fitTabs() {
+  const nav = $("nav");
+  delete nav.dataset["names"];
+  if (getComputedStyle(nav).display !== "grid") {
+    return;
+  }
+  const over = $$("nav .tab").some((tab) => {
+    const name = [...tab.querySelectorAll(".name, .short")].find((each) => getComputedStyle(each).position !== "absolute" && getComputedStyle(each).display !== "none");
+    const style = getComputedStyle(tab);
+    const room = tab.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    return name ? name.getBoundingClientRect().width > room : false;
+  });
+  if (over) {
+    nav.dataset["names"] = "cut";
+  }
+}
 
 /** @param {string} tab */
 function show(tab) {
@@ -2151,7 +2585,7 @@ async function poll() {
     const ended = S.state.jobs.filter((j) => j.status === "done" && !before.has(j.id));
     if (ended.some((j) => j.job_kind === "setup")) {
       void refreshTextRemoval();
-    } else if (S.tab === "settings") {
+    } else {
       paintTextRemoval();
     }
     const landed = ended.some((j) => j.nfiles);
@@ -3263,6 +3697,7 @@ function paintBox() {
   if (f.kind !== "image") {
     setupPlayer(f);
   }
+  viewerZoom?.reset();
   $("#lb-after").hidden = !(S.afterimage && f.kind === "video");
   $("#lb-add").hidden = f.kind === "image";
   if (box.listId) {
@@ -4496,7 +4931,11 @@ async function deleteCurrent() {
   }
 }
 
+/** The viewer's zoom, made when the window is bound. @type {ReturnType<typeof zoomable> | null} */
+let viewerZoom = null;
+
 function bindViewer() {
+  viewerZoom = zoomable($("#lb-stage"), () => document.querySelector("#lb-stage > img"), { editor: false });
   on(document, "fullscreenchange", paintControls);
   on($("#lb-stage"), "click", async (event) => {
     const target = event.target instanceof Element ? event.target : null;
@@ -5212,6 +5651,8 @@ function bindNav() {
       show(button.dataset["tab"] ?? "downloads");
     });
   }
+  new ResizeObserver(fitTabs).observe($("nav"));
+  document.fonts.ready.then(fitTabs).catch(report);
 }
 
 async function boot() {

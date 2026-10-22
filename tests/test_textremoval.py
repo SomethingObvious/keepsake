@@ -1,6 +1,8 @@
 """Setting the eraser up: two pinned models, checked, and nothing an older setup left."""
 
+import dataclasses
 import hashlib
+import urllib.error
 import urllib.request
 from types import TracebackType
 from typing import Self
@@ -8,6 +10,7 @@ from typing import Self
 import pytest
 
 from keepsake import textremoval
+from keepsake.failures import plainly
 from keepsake.jobs import Job
 from keepsake.options import Options
 
@@ -113,6 +116,26 @@ def test_setup_clears_out_an_older_setup_and_fetches_both_models(
     assert sorted(path.name for path in home.iterdir()) == ["models", "ready"]
     assert sorted(path.name for path in models.iterdir()) == ["migan.onnx", "overlay.onnx"]
     assert (models / "migan.onnx").read_bytes() == PAINTER
+
+
+def test_setup_says_which_model_failed_and_why_in_plain_words(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No connection is said as that, not as the library's own error, so Retry makes sense."""
+    files = (dataclasses.replace(pinned("overlay.onnx", NETWORK), name="The overlay network"),)
+    monkeypatch.setattr(textremoval, "FILES", files)
+
+    def urlopen(request: urllib.request.Request, timeout: float) -> Reply:
+        reason = f"no address for {request.host} in {timeout}s"
+        raise urllib.error.URLError(reason)
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    ok, message = textremoval.set_up(setup_job())
+    assert not ok
+    assert plainly(message) == (
+        "The overlay network could not be downloaded: there is no connection to its server."
+    )
+    assert not textremoval.ready()
 
 
 def test_an_older_setup_is_not_ready() -> None:
