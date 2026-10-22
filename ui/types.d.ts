@@ -2,7 +2,7 @@
 // `tsc --noEmit` (checkJs, strict), so a field read wrongly is a lint failure
 // rather than an "undefined" on screen.
 
-type Mode = "auto" | "video" | "audio" | "images" | "transcript";
+type Mode = "auto" | "video" | "audio" | "images" | "transcript" | "thumbnail";
 type Status = "queued" | "running" | "paused" | "done" | "failed" | "cancelled";
 
 interface Settings {

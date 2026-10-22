@@ -13,7 +13,7 @@ Open KeepsakeSetup.exe. It installs for your account only and brings its own Pyt
 ## What It Does
 
 * Saves the best quality as it was served, without re-encoding, and removes metadata by default.
-* Downloads video, audio, pictures or a clean transcript, with presets and your own.
+* Downloads video, audio, pictures, a clean transcript or just the thumbnail, with presets and your own.
 * Runs a queue that pauses, resumes and retries, and follows channels for new uploads.
 * Previews a link first, and Clip downloads only the part you mark. The preview plays small enough for a slow computer.
 * Opens downloads in a library with a player that cuts clips, makes GIFs and saves the sound.

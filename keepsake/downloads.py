@@ -454,6 +454,13 @@ class Queue:
         if job.mode == "images":
             return run_gallery(job, credentials)
         ok, message = run_ytdlp(job, credentials)
+        if (
+            job.mode == "thumbnail"
+            and failures.unrecognised(message)
+            and not failures.needs_sign_in(message)
+        ):
+            # A picture post has no thumbnail, and the whole post is not what was asked for.
+            return False, f"ERROR: No thumbnail to save at {job.url}"
         if ok or job.mode != "auto" or job.stop:
             return ok, message
         # A page with both is a video page with pictures on it, so the video

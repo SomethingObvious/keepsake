@@ -1603,13 +1603,14 @@ function bindPreview() {
 /** @type {Map<string, Card>} */
 const cards = new Map();
 /** @type {Record<string, string>} */
-const MODE_ICON = { audio: "music", images: "image", video: "film", auto: "link", transcript: "text" };
+const MODE_ICON = { audio: "music", images: "image", video: "film", auto: "link", transcript: "text", thumbnail: "image" };
 /** What each colour code stands for, said aloud. @type {Record<string, string>} */
 const CODE_NAME = { "c-video": "Video", "c-audio": "Audio", "c-images": "Pictures", "c-text": "Transcript" };
 /** Where each kind of file goes, as its colour code. @type {Record<string, string>} */
 const CODE = {
   video: "c-video", compatible: "c-video", trim: "c-video", exact: "c-video", gif: "c-video",
   audio: "c-audio", mp3: "c-audio", images: "c-images", image: "c-images", transcript: "c-text",
+  thumbnail: "c-images",
 };
 /** Samples of each running entry's speed, newest last, for its signal line. */
 const signals = {

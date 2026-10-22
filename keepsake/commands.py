@@ -29,8 +29,9 @@ META = (
     "playlist_title,playlist_index,playlist_count,live_status})j"
 )
 # The file, and the others yt-dlp wrote for it: chapters where it cut them,
-# thumbnails and subtitles where they were before being moved beside it.
-WROTE = "KEEPSAKE-FILE %(.{filepath,timestamp,chapters,thumbnails,requested_subtitles})j"
+# thumbnails and subtitles where they were before being moved beside it, and
+# where the file would be when only a thumbnail was asked for.
+WROTE = "KEEPSAKE-FILE %(.{filepath,filename,timestamp,chapters,thumbnails,requested_subtitles})j"
 
 # Embedding into webm or wav is not skipped by yt-dlp: it fails the whole
 # download after the download has finished (measured), so it is left out.
@@ -202,12 +203,20 @@ def untouched(o: Options) -> Options:
 
 def effective(o: Options) -> Options:
     """Return what a download actually does with these options."""
+    if o.mode == "thumbnail":
+        # The thumbnail alone: nothing that describes a file, nothing beside it, and a video
+        # downloaded before still gives its thumbnail, which never counts as downloading it.
+        alone = {**dict.fromkeys(DESCRIBES, False), "subs": "off", "split_chapters": False}
+        o = o.but({**alone, "write_thumbnail": True, "ignore_archive": True})
     return untouched(without_metadata(o))
 
 
 def keep_args(o: Options) -> list[str]:
     """Return what to embed in the file and what to write beside it."""
     args: list[str] = []
+    if o.mode == "thumbnail":
+        # The site's best thumbnail as a JPEG, which any program opens, and never the video.
+        args += ["--skip-download", "--convert-thumbnails", "jpg"]
     if o.embed_thumbnail and cover_fits(o):
         lossless = "png" if o.quality == "best" else "jpg"
         args += ["--embed-thumbnail", "--convert-thumbnails", lossless]
@@ -334,7 +343,7 @@ def plugin_args() -> list[str]:
 
 def folder_for(o: Options, *, gallery: bool = False) -> str:
     """Return where this download goes: videos, sound, pictures and transcripts each have one."""
-    if gallery or o.mode == "images":
+    if gallery or o.mode in ("images", "thumbnail"):
         chosen = o.picture_folder
     elif o.mode == "audio":
         chosen = o.audio_folder
@@ -399,7 +408,8 @@ def ytdlp_command(
         "--print",
         "before_dl:" + META,
         "--print",
-        "after_move:" + WROTE,
+        # With nothing downloaded there is no move, so a thumbnail is reported once it is written.
+        ("after_video:" if o.mode == "thumbnail" else "after_move:") + WROTE,
         "--no-simulate",
         "--no-quiet",
     ]
