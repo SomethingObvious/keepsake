@@ -171,10 +171,13 @@
   a layered rule never beats an unlayered one, whatever its specificity. */
 @layer app {
   :root {
-    /* What the Android app's page keeps its contents clear of, which only that app sets. */
+    /* What the Android app's page keeps its contents clear of, which only that app sets, and
+      how much of each side is a system bar itself (3-button navigation, on its side). */
     --safe-left: 0px;
     --safe-right: 0px;
     --safe-bottom: 0px;
+    --system-left: 0px;
+    --system-right: 0px;
     --bg: #0a0a0a;
     --surface-2: #121212;
     --surface-3: #1a1a1a;
@@ -4331,13 +4334,14 @@
       display: none;
     }
 
-    /* Six tabs across, filling the screen to its edges and under the gesture bar, with what
-      is in them kept clear of the bars, the camera's cutout and the rounded corners. Every
-      state has the same padding, so nothing in a tab moves when it becomes the page. */
+    /* Six tabs across. The bar's own ground runs on under the gesture bar or the buttons, and
+      a tab's fill covers only the tab itself, while the end tabs' fills run out to the screen's
+      sides past the cutout and the rounded corners. What is in a tab keeps clear of all of
+      them, and every state has the same padding, so nothing moves when a tab becomes the page. */
     nav {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
-      padding-inline: var(--safe-left) var(--safe-right);
+      padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
       border-top: 0;
     }
 
@@ -4348,21 +4352,21 @@
       grid-template-columns: auto auto;
       place-content: center;
       gap: 6px 0;
-      height: calc(56px + var(--safe-bottom));
-      padding: 0 4px var(--safe-bottom);
+      height: 56px;
+      padding: 0 4px;
       border-bottom: 0;
       font-stretch: 62%;
       letter-spacing: 0.02em;
     }
 
     .tab:first-child {
-      margin-left: calc(-1 * var(--safe-left));
-      padding-left: calc(4px + var(--safe-left));
+      margin-left: calc(var(--system-left) - var(--safe-left));
+      padding-left: calc(4px + var(--safe-left) - var(--system-left));
     }
 
     .tab:last-child {
-      margin-right: calc(-1 * var(--safe-right));
-      padding-right: calc(4px + var(--safe-right));
+      margin-right: calc(var(--system-right) - var(--safe-right));
+      padding-right: calc(4px + var(--safe-right) - var(--system-right));
     }
 
     .tab + .tab {
