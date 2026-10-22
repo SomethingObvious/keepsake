@@ -2547,6 +2547,10 @@
     color: inherit;
     text-align: left;
     cursor: pointer;
+
+    /* A held tile starts picking, so it must not also pop up the phone's own menu or select text. */
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .tile .ph {
