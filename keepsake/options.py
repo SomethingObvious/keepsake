@@ -11,7 +11,7 @@ from typing import Any, Self, cast
 
 from keepsake import APP, store, winapi
 
-MODES = ("auto", "video", "audio", "images", "transcript")
+MODES = ("auto", "video", "audio", "images", "transcript", "thumbnail")
 
 
 def own_folders() -> dict[str, str]:

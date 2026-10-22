@@ -1,5 +1,6 @@
 """The command lines: each option becomes exactly the flags it should, and nothing breaks them."""
 
+import json
 from pathlib import Path
 
 from keepsake import commands
@@ -14,6 +15,7 @@ from keepsake.commands import (
     ytdlp_command,
     ytdlp_date,
 )
+from keepsake.jobs import Job, YtDlpReader
 from keepsake.options import Options
 
 
@@ -104,6 +106,32 @@ def test_each_kind_goes_to_its_own_folder_and_a_gallery_one_level_down() -> None
     assert after(gallery_command(o, link, None), "-D") == str(Path("P") / "instagram natgeo")
     assert after(gallery_command(o.but({"by_site": True}), link, None), "-d") == "P"
     assert after(ytdlp_command(o, link, None), "-o") == o.template
+
+
+def test_the_thumbnail_type_saves_only_the_best_thumbnail_as_a_jpeg_with_the_pictures(
+    tmp_path: Path,
+) -> None:
+    """Nothing else is downloaded or written beside it, and the JPEG is what the job keeps."""
+    o = Options(mode="thumbnail", picture_folder="P", subs="embed", write_description=True)
+    command = ytdlp_command(o.but({"archive": True}), "https://youtu.be/x", None)
+    assert after(command, "-P") == "P"
+    assert after(command, "-o") == o.template
+    assert after(command, "--convert-thumbnails") == "jpg"
+    for flag in ("--skip-download", "--write-thumbnail", "--no-download-archive"):
+        assert flag in command
+    for flag in ("--write-subs", "--embed-subs", "--write-description", "--download-archive"):
+        assert flag not in command
+    assert "after_video:" + commands.WROTE in command
+    picture = tmp_path / "Title [x].jpg"
+    picture.write_bytes(b"")
+    job = Job(url="https://youtu.be/x", mode="thumbnail", options=o)
+    written = {
+        "filepath": None,
+        "filename": str(tmp_path / "Title [x].NA"),
+        "thumbnails": [{"id": "0"}, {"filepath": str(tmp_path / "working" / picture.name)}],
+    }
+    YtDlpReader(job)("KEEPSAKE-FILE " + json.dumps(written))
+    assert job.files == [str(picture)]
 
 
 def test_the_url_always_comes_last_after_a_separator() -> None:

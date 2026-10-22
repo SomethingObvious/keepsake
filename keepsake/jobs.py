@@ -301,9 +301,15 @@ class YtDlpReader:
             info = store.record(json.loads(rest))
         except ValueError:
             return
-        if not info.get("filepath"):
+        # The Thumbnail type downloads nothing, so there is only where the video would be,
+        # and the thumbnail moved beside it is the file.
+        where = info.get("filepath") or info.get("filename")
+        if not where:
             return
-        path = str(info["filepath"])
+        sides = side_files(info, Path(str(where)).parent)
+        path = str(info["filepath"]) if info.get("filepath") else next(iter(sides), "")
+        if not path:
+            return
         stamp = info.get("timestamp")
         if self.job.options.file_date == "upload" and isinstance(stamp, int | float):
             try:
@@ -311,7 +317,7 @@ class YtDlpReader:
             except OSError:
                 self.job.log.append(f"--- could not set the date on {path}")
         self.job.add_file(path)
-        for side in side_files(info, Path(path).parent):
+        for side in sides:
             self.job.add_file(side)
 
 
