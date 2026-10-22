@@ -14,6 +14,7 @@ from keepsake import eraser
 
 HEIGHT, WIDTH = 160, 480
 ORIENTATION_SIDEWAYS = 6  # stored turned a quarter to the left
+BLUR = 4  # how far past the text the overlay network's view reaches at full size, in pixels
 
 
 def photo(height: int = HEIGHT, width: int = WIDTH) -> NDArray[np.uint8]:
@@ -37,7 +38,7 @@ def captioned() -> tuple[NDArray[np.uint8], NDArray[np.bool_]]:
 
 
 class Overlay:
-    """Stands in for the overlay network: sure of a block at the top left, nowhere else."""
+    """Stands in for the overlay network: sure of the band the caption is in, nowhere else."""
 
     def run(
         self,
@@ -48,7 +49,7 @@ class Overlay:
         """Return two logit maps the size of the input."""
         _, _, tall, wide = feed["image"].shape
         logits = np.full((1, 2, tall, wide), -9.0, dtype=np.float32)
-        logits[:, :, : tall // 4, : wide // 4] = 9.0
+        logits[:, :, int(tall * 0.3) : int(tall * 0.7), int(wide * 0.06) : int(wide * 0.92)] = 9.0
         return [logits]
 
 
@@ -72,22 +73,37 @@ class Painter:
         return [image]
 
 
+def seen(truth: NDArray[np.bool_]) -> NDArray[np.float32]:
+    """Return the overlay network's view of some text: sure of it, and blurred past it."""
+    return eraser.grow(truth, BLUR).astype(np.float32)
+
+
 def test_a_stroke_snaps_to_the_caption_inside_it() -> None:
-    """Every bit of the caption's ink is kept, and much of the photo around it is not."""
+    """The caption's ink is kept, and the photo around it is not; with no network, nothing is."""
     picture, truth = captioned()
     stroke = np.zeros(truth.shape, dtype=bool)
     stroke[34:128, 16 : WIDTH - 16] = True  # painted well past the text, as a hand would
     assert (truth <= stroke).all()
-    snapped = eraser.snap(picture, stroke, np.zeros(truth.shape, dtype=np.float32))
+    snapped = eraser.snap(picture, stroke, seen(truth))
     assert (snapped <= stroke).all()
-    assert (snapped & truth).sum() / truth.sum() > 0.99
+    assert (snapped & truth).sum() / truth.sum() > 0.95
     assert snapped.sum() < 0.4 * stroke.sum()
-    # Whatever the overlay network is sure of counts too, but only inside the stroke.
-    sure = np.zeros(truth.shape, dtype=np.float32)
-    sure[110:150, 200:260] = 1.0
-    with_network = eraser.snap(picture, stroke, sure)
-    assert with_network[110:128, 200:260].all()
-    assert not with_network[128:150].any()
+    # Colour alone is not enough: what the network does not see as laid on top stays.
+    assert not eraser.snap(picture, stroke, np.zeros(truth.shape, dtype=np.float32)).any()
+
+
+def test_a_loose_stroke_does_not_flood_what_is_not_text() -> None:
+    """A dark post and a bright edge inside a loose stroke stay, however unlike the ring."""
+    picture, truth = captioned()
+    picture[30:132, 300:330] = (12, 12, 12)  # a post the stroke crosses, starker than the caption
+    picture[30:132, 360:364] = (250, 250, 250)  # and a bright edge
+    stroke = np.zeros(truth.shape, dtype=bool)
+    stroke[30:132, 8 : WIDTH - 8] = True
+    snapped = eraser.snap(picture, stroke, seen(truth))
+    # Only where the post touches the letters: within the network's blur, the gate and the halo.
+    reach = BLUR + eraser.NEAR_NETWORK + eraser.HALO
+    assert not (snapped & ~eraser.grow(truth, reach)).any()
+    assert (snapped & truth).sum() / truth.sum() > 0.95
 
 
 def test_remove_paints_only_the_marked_part_one_patch_at_a_time() -> None:
@@ -179,33 +195,40 @@ def test_without_jpeglib_a_jpeg_is_encoded_again_with_its_own_tables(
 
 
 def test_the_editor_suggests_removes_undoes_and_saves_a_copy(tmp_path: Path) -> None:
-    """The network's guess is marked, Remove paints it, Undo undoes it, Save leaves the original."""
+    """The network's caption is marked, Remove paints it, Undo undoes it, Save keeps the original.
+
+    Little of the band the network is sure of is marked beside the caption itself.
+    """
+    picture, truth = captioned()
     original = tmp_path / "meme.png"
-    Image.fromarray(photo()).save(original)
+    Image.fromarray(picture).save(original)
     editor = eraser.Editor()
     editor.models = eraser.Models(Overlay(), Painter())
     shown = editor.open(original, tmp_path / "no models needed")
     assert (shown["width"], shown["height"]) == (WIDTH, HEIGHT)
     assert str(shown["picture"]).startswith("data:image/jpeg;base64,")
     assert editor.save() is None  # nothing changed yet
-    guess = editor.suggest()
-    assert guess is not None
-    assert editor.mask[: HEIGHT // 4, : WIDTH // 4].all()
-    erased = editor.stroke([(10.0, 10.0), (40.0, 10.0)], 12.0, erase=True, snapped=True)
+    assert editor.suggest() is not None
+    assert (editor.mask & truth).sum() / truth.sum() > 0.9
+    assert (editor.mask & ~eraser.grow(truth, 3)).sum() < 0.05 * editor.mask.sum()
+    rows, cols = np.nonzero(truth)
+    kept = (int(rows[cols > 300][0]), int(cols[cols > 300][0]))
+    gone = (int(rows[(cols > 60) & (cols < 100)][0]), int(cols[(cols > 60) & (cols < 100)][0]))
+    erased = editor.stroke([(50.0, 80.0), (110.0, 80.0)], 90.0, erase=True, snapped=True)
     assert erased is not None
-    assert not editor.mask[10, 25]
+    assert not editor.mask[gone]
     removed = editor.remove()
     assert removed is not None
     assert str(removed["picture"]).startswith("data:image/jpeg;base64,")
     assert not editor.mask.any()
-    assert (editor.picture[30, 30] == 128).all()
-    assert (editor.picture[10, 25] != 128).any()  # erased from the mark, so left alone
+    assert (editor.picture[kept] == 128).all()
+    assert (editor.picture[gone] != 128).any()  # erased from the mark, so left alone
     editor.undo()
-    assert (editor.picture == photo()).all()
-    assert editor.mask[30, 30]
+    assert (editor.picture == picture).all()
+    assert editor.mask[kept]
     editor.remove()
     copy = editor.save()
     assert copy is not None
     assert copy.name == "meme (no text).png"
     assert (np.asarray(Image.open(copy)) == editor.picture).all()
-    assert (np.asarray(Image.open(original)) == photo()).all()
+    assert (np.asarray(Image.open(original)) == picture).all()

@@ -171,6 +171,10 @@
   a layered rule never beats an unlayered one, whatever its specificity. */
 @layer app {
   :root {
+    /* What the Android app's page keeps its contents clear of, which only that app sets. */
+    --safe-left: 0px;
+    --safe-right: 0px;
+    --safe-bottom: 0px;
     --bg: #0a0a0a;
     --surface-2: #121212;
     --surface-3: #1a1a1a;
@@ -498,6 +502,14 @@
     color: var(--ink-on);
   }
 
+  .tab:active {
+    background: var(--surface-3);
+  }
+
+  .tab.on:active {
+    background: var(--text-dim);
+  }
+
   .tab.on::after {
     position: absolute;
     top: 0;
@@ -518,7 +530,9 @@
     display: none;
   }
 
+  /* Clear of the red block whether or not its tab is the page, so the number never moves. */
   nav .count {
+    margin-right: 6px;
     margin-left: auto;
     color: var(--text-faint);
     font-size: 12px;
@@ -526,7 +540,6 @@
   }
 
   .tab.on .count {
-    margin-right: 6px;
     color: var(--ink-on);
   }
 
@@ -3237,6 +3250,66 @@
     pointer-events: none;
   }
 
+  /* Zoom: the stage clips the picture it holds, and a hand moves it rather than the page. */
+  #lb-stage,
+  #er-stage {
+    overflow: hidden;
+  }
+
+  #lb-stage:has(> img),
+  #er-stage {
+    touch-action: none;
+  }
+
+  .easing {
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) {
+    #lb-stage > img {
+      cursor: zoom-in;
+    }
+
+    #lb-stage.zoomed > img {
+      cursor: grab;
+    }
+  }
+
+  .stage.panning,
+  .stage.panning * {
+    cursor: grabbing;
+  }
+
+  /* How far the picture is zoomed, outlined as the toast is; pressing it fits the picture again. */
+  .zoom-level {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    z-index: 2;
+    height: 32px;
+    padding: 0 13px;
+    border: 1px solid var(--ink);
+    background: var(--bg);
+    color: var(--text);
+    font: 500 11px var(--sans);
+    font-variant-numeric: tabular-nums;
+    font-stretch: var(--wide);
+    letter-spacing: var(--track);
+    transform: translateX(-50%);
+  }
+
+  @media (hover: hover) {
+    .zoom-level:hover {
+      background: var(--ink);
+      color: var(--ink-on);
+    }
+  }
+
+  .zoom-level:focus-visible {
+    outline: 1px solid var(--ink);
+    outline-offset: 2px;
+  }
+
   #er-compare.held {
     border-color: var(--ink);
     color: var(--text);
@@ -3986,6 +4059,59 @@
     width: 100%;
   }
 
+  .dialog-say {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* Remove Text's setup, in its dialog and in Settings: the download fills its outline from the
+    left the way a Working button fills with a save, with how much has arrived written on it. */
+  .setup-progress {
+    display: grid;
+    margin-top: 14px;
+  }
+
+  .setup-bar,
+  .setup-amount {
+    grid-area: 1 / 1;
+  }
+
+  .setup-bar {
+    width: 100%;
+    height: 32px;
+    border: 1px solid var(--edge);
+    background: none;
+    appearance: none;
+  }
+
+  .setup-bar::-webkit-progress-bar {
+    background: none;
+  }
+
+  .setup-bar::-webkit-progress-value {
+    background: rgb(236 235 230 / 16%);
+  }
+
+  .setup-bar::-moz-progress-bar {
+    background: rgb(236 235 230 / 16%);
+  }
+
+  .setup-amount {
+    place-self: center;
+    color: var(--text);
+    font: 500 11px var(--sans);
+    font-variant-numeric: tabular-nums;
+    font-stretch: var(--wide);
+    letter-spacing: var(--track);
+    text-transform: uppercase;
+  }
+
+  #setup-text[data-state="failed"] .dialog-say {
+    color: var(--warn);
+  }
+
   .keys {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -4086,6 +4212,11 @@
     .chip .icon-btn {
       width: 44px;
       height: 44px;
+    }
+
+    .zoom-level {
+      height: 44px;
+      padding: 0 16px;
     }
 
     .split .opener,
@@ -4200,35 +4331,57 @@
       display: none;
     }
 
-    /* Downloads is wider than a sixth of a phone, so the bar keeps the end tabs' names off the
-      screen's edge, and the names sit a little closer so the red block still has room. */
+    /* Six tabs across, filling the screen to its edges and under the gesture bar, with what
+      is in them kept clear of the bars, the camera's cutout and the rounded corners. Every
+      state has the same padding, so nothing in a tab moves when it becomes the page. */
     nav {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
-      padding-inline: 6px;
+      padding-inline: var(--safe-left) var(--safe-right);
       border-top: 0;
     }
 
+    /* The names in Archivo's narrowest cut, so Downloads fits a sixth of a 360 dp phone at 11px. */
     .tab {
       position: relative;
       display: grid;
       grid-template-columns: auto auto;
       place-content: center;
       gap: 6px 0;
-      height: 56px;
-      padding: 0 2px;
+      height: calc(56px + var(--safe-bottom));
+      padding: 0 4px var(--safe-bottom);
       border-bottom: 0;
-      font-stretch: 75%;
+      font-stretch: 62%;
       letter-spacing: 0.02em;
+    }
+
+    .tab:first-child {
+      margin-left: calc(-1 * var(--safe-left));
+      padding-left: calc(4px + var(--safe-left));
+    }
+
+    .tab:last-child {
+      margin-right: calc(-1 * var(--safe-right));
+      padding-right: calc(4px + var(--safe-right));
     }
 
     .tab + .tab {
       border-left: 1px solid var(--border);
     }
 
-    /* The words centre on what the red block leaves of the tab. */
-    .tab.on {
-      padding-right: 8px;
+    /* The red block faces the page the tab opens: above it here, as it sits to the rail's right. */
+    .tab.on::after {
+      top: 0;
+      bottom: auto;
+      left: 0;
+      width: auto;
+      height: 6px;
+    }
+
+    /* Inside the tab, so the screen's edge or a neighbour never hides it, in the tab's own ink. */
+    .tab:focus-visible {
+      outline-color: currentcolor;
+      outline-offset: -4px;
     }
 
     .tab .i {
@@ -4256,10 +4409,10 @@
     /* The count rides on the icon, so the name keeps the tab's whole width. */
     nav .count {
       position: absolute;
-      top: 6px;
+      top: 8px;
       left: calc(50% + 8px);
       margin: 0;
-      font-size: 10px;
+      font-size: 11px;
     }
 
     nav .count:empty {
@@ -4303,13 +4456,15 @@
       flex: 1 1 0;
     }
 
+    /* Download takes a line of its own only when the three buttons leave it too little room. */
     .composer .go {
       flex: 1 1 100%;
+      flex-wrap: wrap;
       margin-left: 0;
     }
 
     #download-btn {
-      flex: 1;
+      flex: 1 0 auto;
       justify-content: center;
     }
 
@@ -4669,12 +4824,16 @@
     }
   }
 
-  /* The narrowest phones take the tab names down a size, so Downloads still fits beside the red block. */
-  @media (width <= 380px) {
-    .tab {
-      font-size: 10px;
-      letter-spacing: 0;
-    }
+  /* When a name would not fit its tab, at a large text size or on the narrowest phones, all the
+    names are cut rather than shrunk: the icons stand for them, and they are still read out. */
+  nav[data-names="cut"] .tab .name,
+  nav[data-names="cut"] .tab .short {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   /* ---------- the Android app ---------- */
@@ -4691,6 +4850,24 @@
 
   :root[data-platform="android"] :is([data-desktop], [data-act="afterimage"], [data-p="pip"]) {
     display: none;
+  }
+
+  /* The page reaches the screen's sides and bottom; its contents keep inside the safe areas. */
+  :root[data-platform="android"] main {
+    padding-inline: var(--safe-left) var(--safe-right);
+  }
+
+  :root[data-platform="android"] #lightbox {
+    padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  }
+
+  /* Remove Text sits over the viewer by position, so it keeps clear of them by its own padding. */
+  :root[data-platform="android"] #eraser {
+    padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  }
+
+  :root[data-platform="android"] #toast {
+    bottom: calc(22px + var(--safe-bottom));
   }
 
   /* Android's Back is a swipe in from either side, so Remove Text's picture keeps clear of

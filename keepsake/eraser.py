@@ -1,9 +1,9 @@
 """Taking text off a picture by hand, the way a phone's magic eraser does.
 
 The person paints over what should go. When a stroke ends, it snaps to what
-in it is text: every colour unlike the ring just outside the stroke, and
-whatever the overlay network sees laid on top, grown a little for the
-anti-aliased edge, an outline or a shadow. Remove paints the marked pixels
+in it is text: each colour unlike the ring just outside the stroke, where the
+overlay network also sees something laid on top, grown 2 px for the
+anti-aliased edge. Remove paints the marked pixels
 over with MI-GAN, and can be pressed again on its own result. Saving writes a
 copy beside the picture, a JPEG spliced so that every 8x8 block the edit did
 not touch keeps its exact coefficients.
@@ -47,6 +47,11 @@ SIDE: Final = 512
 # Opacity from which the network's view of a pixel counts as laid on top.
 SUGGESTED: Final = 0.5
 SNAPPED: Final = 0.3
+# The snap keeps a colour only this close to what the network sees, in pixels: the network
+# knows what is text but is blurred at full size, and colour knows exactly where it is.
+NEAR_NETWORK: Final = 3
+# How far the snapped mark grows, for the anti-aliased edge the fill must cover, in pixels.
+HALO: Final = 2
 # The suggestion is grown by this share of the picture's long side, as a hand would paint it.
 SUGGESTION_REACH: Final = 0.01
 SUGGESTION_LEAST: Final = 4
@@ -60,13 +65,11 @@ SAMPLE: Final = 3000
 FLOOR: Final = 40
 LEVELS_PER_UNIT: Final = 2
 LEAST_RING: Final = 8
-# How thick a stroke is, and the ring, gap closing and halo as shares of that.
+# How thick a stroke is, and the ring as a share of that.
 THINNEST: Final = 4
 # A stroke is snapped in a crop around it a quarter of its height bigger, and at least 6 px.
 CROP_LEAST: Final = 6
 RING_SHARE: Final = 5
-CLOSE_SHARE: Final = 20
-HALO_SHARE: Final = 16
 # MI-GAN paints one patch at a time: holes in the same or a touching 16 px block are one patch,
 # with a quarter of its size around it as context, and at least 64 px.
 BLOCK: Final = 16
@@ -182,10 +185,12 @@ def snap(picture: Picture, stroke: Mask, opacity: Alpha) -> Mask:
     """Return the part of a stroke that is text, given the picture and overlay around it.
 
     A person paints past the text, so the ring just outside a stroke is
-    background: any colour inside the stroke unlike all of the ring's is text,
-    and so is anything the overlay network sees laid on top. Small gaps close
-    (a white letter inside a dark outline) and the result grows by a halo for
-    the anti-aliased edge and a shadow, never past the stroke.
+    background, and a colour inside the stroke unlike all of the ring's may be
+    text. It counts only within a few pixels of what the overlay network sees
+    laid on top, so a dark tree or a bright edge brushed over by a loose hand
+    stays: precision over recall, as missing a little is fixed by painting
+    again, and covering what is not text is not. The result grows by a halo
+    for the anti-aliased edge, never past the stroke.
     """
     rows, cols = np.nonzero(stroke)
     if not rows.size:
@@ -202,10 +207,8 @@ def snap(picture: Picture, stroke: Mask, opacity: Alpha) -> Mask:
     levels = np.clip(far * LEVELS_PER_UNIT, 0, 255).astype(np.uint8)
     text = np.zeros(stroke.shape, dtype=bool)
     text[stroke] = levels > max(otsu(levels), FLOOR)
-    text |= stroke & (opacity > SNAPPED)
-    gap = max(1, thick // CLOSE_SHARE)
-    text = shrink(grow(text, gap), gap)
-    return grow(text, max(2, thick // HALO_SHARE)) & stroke
+    text &= grow(opacity > SNAPPED, NEAR_NETWORK)
+    return grow(text, HALO) & stroke
 
 
 # --- the models ---
@@ -272,10 +275,18 @@ def opacity(session: Session, picture: Picture) -> Alpha:
     return np.asarray(full, dtype=np.float32)
 
 
-def suggestion(alpha: Alpha) -> Mask:
-    """Return what looks laid on top of the whole picture, painted roughly, as a hand would."""
+def suggestion(picture: Picture, alpha: Alpha) -> Mask:
+    """Return what looks laid on top of the whole picture, painted roughly, then snapped.
+
+    The network alone is sure what is text but blurred about where, so each
+    group of what it sees is snapped as a stroke over it would be.
+    """
     reach = max(SUGGESTION_LEAST, round(SUGGESTION_REACH * max(alpha.shape)))
-    return grow(alpha > SUGGESTED, reach)
+    rough = grow(alpha > SUGGESTED, reach)
+    found = np.zeros(rough.shape, dtype=bool)
+    for box in patches(rough):
+        found[box] |= snap(picture[box], rough[box], alpha[box])
+    return found
 
 
 def patches(hole: Mask) -> list[Box]:
@@ -584,7 +595,7 @@ class Editor:
         with self.lock:
             if self.opened is None:
                 return None
-            found = suggestion(models.opacity(self.picture))
+            found = suggestion(self.picture, models.opacity(self.picture))
             box = bounds(found)
             if box is None:
                 return None

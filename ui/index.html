@@ -22,12 +22,12 @@
         <small>Keeps what you find online</small>
       </div>
       <nav aria-label="Pages">
-        <button type="button" data-tab="downloads" class="tab on"><span data-i="download"></span>Downloads<span class="count" id="nav-count"></span></button>
-        <button type="button" class="tab" data-tab="search"><span data-i="search"></span>Search</button>
+        <button type="button" data-tab="downloads" class="tab on"><span data-i="download"></span><span class="name">Downloads</span><span class="count" id="nav-count"></span></button>
+        <button type="button" class="tab" data-tab="search"><span data-i="search"></span><span class="name">Search</span></button>
         <button type="button" class="tab" data-tab="subscriptions"><span data-i="bell"></span><span class="name">Subscriptions</span><span class="short" aria-hidden="true">Subs</span><span class="count" id="nav-subs"></span></button>
-        <button type="button" class="tab" data-tab="library"><span data-i="grid"></span>Library</button>
-        <button type="button" class="tab" data-tab="history"><span data-i="clock"></span>History</button>
-        <button type="button" class="tab" data-tab="settings"><span data-i="sliders"></span>Settings</button>
+        <button type="button" class="tab" data-tab="library"><span data-i="grid"></span><span class="name">Library</span></button>
+        <button type="button" class="tab" data-tab="history"><span data-i="clock"></span><span class="name">History</span></button>
+        <button type="button" class="tab" data-tab="settings"><span data-i="sliders"></span><span class="name">Settings</span></button>
       </nav>
       <div class="ready" id="app-ready" hidden>
         <strong id="app-ready-text">An update is ready</strong>
@@ -665,7 +665,8 @@
               <div class="c"><input type="checkbox" class="switch" data-set="auto_update" aria-label="Weekly updates"></div></div>
             <div class="setting"><div><div class="l">yt-dlp plugins</div><div class="h">Anything in this folder is loaded, such as a PO token provider</div></div>
               <div class="c"><button type="button" class="btn" data-open="plugins"><span data-i="folder"></span>Open plugins folder</button></div></div>
-            <div class="setting" id="text-removal"><div><div class="l">Remove text</div><div class="h" id="detext-about"></div></div>
+            <div class="setting" id="text-removal"><div><div class="l">Remove text</div><div class="h" id="detext-about"></div>
+              <div class="setup-progress" id="detext-progress" hidden><progress class="setup-bar" max="100" value="0" aria-label="Remove Text's download"></progress><span class="setup-amount" aria-hidden="true"></span></div></div>
               <div class="c"><button type="button" class="btn" id="detext-setup" hidden>Set Up</button><button type="button" class="btn ghost" id="detext-forget" hidden>Uninstall</button></div></div>
             <div class="setting"><div><div class="l">Keepsake <span class="mono" id="app-version"></span></div><div class="h" id="app-state"></div></div>
               <div class="c"><button type="button" class="btn primary" id="app-restart-2" hidden>Restart to update</button><button type="button" class="btn" id="app-check">Check now</button></div></div>
@@ -774,8 +775,8 @@
             <canvas id="er-picture"></canvas>
             <canvas id="er-original" hidden></canvas>
             <canvas id="er-mask" role="img" aria-label="The picture, with what will be removed marked in red"></canvas>
-            <div class="er-ring" id="er-ring" hidden></div>
           </div>
+          <div class="er-ring" id="er-ring" hidden></div>
         </div>
         <footer class="tools-bar" id="er-tools" aria-label="Brush">
           <div class="seg" role="group" aria-label="Mark or unmark">
@@ -824,6 +825,7 @@
         <dt><kbd>S</kbd></dt><dd>Save the frame as a picture</dd>
         <dt><kbd>T</kbd></dt><dd>Remove Text from a picture</dd>
         <dt><kbd>Page Up</kbd> <kbd>Page Down</kbd></dt><dd>The previous or next file (or <kbd>Shift</kbd> with an arrow)</dd>
+        <dt>Wheel</dt><dd>Zoom into a picture where the pointer is; drag to move it, double-click to fit it again</dd>
         <dt><kbd>Delete</kbd></dt><dd>Move the file to the Recycle Bin</dd>
       </dl>
       </section>
@@ -834,6 +836,8 @@
         <dt><kbd>[</kbd> <kbd>]</kbd></dt><dd>A smaller or bigger brush</dd>
         <dt><kbd>Enter</kbd></dt><dd>Remove what is marked</dd>
         <dt><kbd>Space</kbd></dt><dd>Hold to compare with the picture as it was</dd>
+        <dt><kbd>Ctrl</kbd>+wheel</dt><dd>Zoom in or out; the brush stays the same size on screen, so it paints finer</dd>
+        <dt>Wheel, middle drag</dt><dd>Move around the zoomed picture</dd>
         <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd></dt><dd>Undo the last stroke or removal</dd>
         <dt><kbd>Ctrl</kbd>+<kbd>S</kbd></dt><dd>Save a copy beside the picture</dd>
         <dt><kbd>Esc</kbd></dt><dd>Back to the picture</dd>
@@ -864,6 +868,18 @@
         <div class="actions">
           <button type="submit" class="btn primary" value="ok">OK</button>
           <button type="submit" class="btn ghost" value="cancel" formnovalidate>Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="setup-text" aria-labelledby="setup-text-title" aria-describedby="setup-text-say">
+      <form method="dialog">
+        <h2 class="dialog-title" id="setup-text-title">Set Up Remove Text</h2>
+        <p class="dialog-say" id="setup-text-say"></p>
+        <div class="setup-progress" id="setup-text-progress" hidden><progress class="setup-bar" max="100" value="0" aria-label="Remove Text's download"></progress><span class="setup-amount" aria-hidden="true"></span></div>
+        <div class="actions">
+          <button type="button" class="btn primary" id="setup-text-go">Set Up</button>
+          <button type="submit" class="btn ghost" value="close" id="setup-text-close">Not Now</button>
         </div>
       </form>
     </dialog>

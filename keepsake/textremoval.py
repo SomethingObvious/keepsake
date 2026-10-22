@@ -10,6 +10,7 @@ judges and their server, the OCR models and the best tier's painter.
 
 import hashlib
 import shutil
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from http import HTTPStatus
@@ -33,6 +34,7 @@ class Download:
     to: str  # relative to the models folder
     size: int
     sha256: str
+    name: str = ""  # what a person calls it, when setup has to say it failed
 
 
 # The network is not in the installer: it comes from this repository at this tag.
@@ -46,12 +48,14 @@ FILES: Final = (
         "overlay.onnx",
         18369363,
         "d200e7dcc32e65da2ac97aef9a7f56b832fc1b037a06311971390cabcefb0900",
+        "The overlay network",
     ),
     Download(
         f"https://huggingface.co/{MIGAN[0]}/resolve/{MIGAN[1]}/migan_pipeline_v2.onnx",
         "migan.onnx",
         28079181,
         "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b",
+        "MI-GAN",
     ),
 )
 
@@ -156,7 +160,15 @@ def set_up(job: Job) -> Outcome:
     total, done = sum(f.size for f in FILES), 0
     job.stage = "Downloading its models"
     for want in FILES:
-        done = fetch(want, job, done, total)
+        what = f"{want.name or want.to} could not be downloaded"
+        try:
+            done = fetch(want, job, done, total)
+        except urllib.error.HTTPError as problem:
+            return False, f"ERROR: {what}: its server answered {problem.code}"
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            return False, f"ERROR: {what}: there is no connection to its server"
+        except OSError as problem:  # the disk, most likely: full, or not writable
+            return False, f"ERROR: {what}: {problem.strerror or problem}"
         if job.stopped():
             return False, ""
     marker().write_text(SETUP_VERSION, encoding="utf-8")
