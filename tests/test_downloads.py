@@ -150,6 +150,10 @@ def test_a_file_on_disk_finds_its_catalogue_number(data: Path) -> None:
     history.remember(done)
     assert history.serials() == {os.path.normcase(r"C:\Videos\Keepsake\Clip.mp4"): 7}
     assert history.serials()[os.path.normcase(r"c:\videos\keepsake\clip.MP4")] == 7
+    song = Job(url="https://x/2", mode="audio", options=Options(), status="done", serial=8)
+    song.files = [r"C:\Videos\Keepsake\Song.mp4"]
+    history.remember(song)
+    assert history.sounds() == {os.path.normcase(r"C:\Videos\Keepsake\Song.mp4")}
 
 
 def test_a_skip_names_the_download_it_repeats_and_stays_out_of_history(queue: Queue) -> None:

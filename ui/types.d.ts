@@ -289,6 +289,8 @@ interface LibFile {
   uri: string;
   name: string;
   kind: "video" | "audio" | "image";
+  /** A video that was downloaded as sound, which the phone saves with a black picture. */
+  sound?: boolean;
   size: number;
   time: number;
   folder: string;

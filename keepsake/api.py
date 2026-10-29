@@ -322,10 +322,15 @@ class Api:
                 unique.setdefault(os.path.normcase(str(entry["path"])), entry)
         found = sorted(unique.values(), key=lambda entry: -float(str(entry["time"])))
         numbers = self._app.queue.history.serials()
+        sounds = self._app.queue.history.sounds()
         for entry in found[: library.MOST]:
-            serial = numbers.get(os.path.normcase(str(entry["path"])))
+            path = os.path.normcase(str(entry["path"]))
+            serial = numbers.get(path)
             if serial:
                 entry["serial"] = serial
+            # The phone saves a sound as a video of a black picture, played as the sound it is.
+            if entry["kind"] == "video" and path in sounds:
+                entry["sound"] = True
         return found[: library.MOST]
 
     def convert(self, path: object, how: object, start: object = 0, end: object = 0) -> str:
