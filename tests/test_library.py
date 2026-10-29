@@ -9,9 +9,10 @@ from keepsake.updates import ffmpeg_version, version_in, version_tuple
 
 
 def test_the_library_lists_media_newest_first(tmp_path: Path) -> None:
-    """Sidecar files are left out; folders are shown relative to the download folder."""
+    """Sidecars and hidden or trashed files are left out, and folders are relative."""
     (tmp_path / "Youtube").mkdir()
     (tmp_path / "Youtube" / "a.mp4").write_bytes(b"x")
+    (tmp_path / "Youtube" / ".trashed-1795653706-a.mp4").write_bytes(b"x")
     (tmp_path / "Youtube" / "a.info.json").write_text("{}", encoding="utf-8")
     (tmp_path / "b.jpg").write_bytes(b"xy")
     found = library.files(str(tmp_path))

@@ -155,6 +155,8 @@ class Options:
     preview_playback: str = "360"  # 360 | 240 | 144 | sound | off
     background_play: bool = True  # keeps playing out of sight, the screen off on a phone
     media_controls: bool = True  # a player in the phone's notification bar and lock screen
+    skip_back: int = 10  # seconds the player's back button and J go
+    skip_forward: int = 10  # and its forward button and L
     last_update: float = 0.0
 
     @classmethod

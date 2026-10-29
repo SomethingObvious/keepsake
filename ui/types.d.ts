@@ -70,6 +70,8 @@ interface Settings {
   preview_playback: string;
   background_play: boolean;
   media_controls: boolean;
+  skip_back: number;
+  skip_forward: number;
   cookies: string;
   cookie_file: string;
   proxy: string;

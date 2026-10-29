@@ -2921,7 +2921,7 @@ async function loadLibrary() {
 function libItems() {
   const query = /** @type {HTMLInputElement} */ ($("#libq")).value.trim().toLowerCase();
   const sort = /** @type {HTMLSelectElement} */ ($("#libsort")).value;
-  const items = S.lib.filter((f) => (S.libFilter === "all" || f.kind === S.libFilter) &&
+  const items = S.lib.filter((f) => (S.libFilter === "all" || kindOf(f) === S.libFilter) &&
     (!query || f.name.toLowerCase().includes(query) || f.folder.toLowerCase().includes(query)));
   /** @type {Record<string, (a: LibFile, b: LibFile) => number>} */
   const orders = {
@@ -2957,7 +2957,7 @@ function renderLibrary() {
       : pictured(f) ? `${thumb} data-video>${known ? "" : icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
     const where = f.folder === "." ? f.name : `${f.folder}\\${f.name}`;
     const picked = S.libPicked.has(f.path);
-    return `<button type="button" class="tile${picked ? " picked" : ""}" data-i="${String(i)}" aria-label="${S.libPicking ? "Pick" : "View"} ${esc(f.name)}"${S.libPicking ? ` aria-pressed="${String(picked)}"` : ""}><span class="ph">${media}<span class="tick">${icon("check")}</span><span class="kind"><i class="code ${CODE[f.kind] ?? "c-wait"}"></i>${f.serial ? `${String(f.serial).padStart(4, "0")} ` : ""}${esc(ext)}</span></span>
+    return `<button type="button" class="tile${picked ? " picked" : ""}" data-i="${String(i)}" aria-label="${S.libPicking ? "Pick" : "View"} ${esc(f.name)}"${S.libPicking ? ` aria-pressed="${String(picked)}"` : ""}><span class="ph">${media}<span class="tick">${icon("check")}</span><span class="kind"><i class="code ${CODE[kindOf(f)] ?? "c-wait"}"></i>${f.serial ? `${String(f.serial).padStart(4, "0")} ` : ""}${esc(ext)}</span></span>
       <span class="cap"><span class="n" title="${esc(where)}">${esc(f.name)}</span><span class="m">${esc(bytes(f.size))}, ${esc(ago(f.time))}</span></span></button>`;
   }).join("");
   $("#libempty").hidden = items.length > 0;
@@ -3336,7 +3336,7 @@ function listDetail(p) {
   const items = p.files.map((path, i) => {
     const f = known.get(path);
     const name = f?.name ?? path.split(/[\\/]/u).pop() ?? path;
-    const code = f ? CODE[f.kind] ?? "c-wait" : "c-wait";
+    const code = f ? CODE[kindOf(f)] ?? "c-wait" : "c-wait";
     return `<div class="list-item${f ? "" : " gone"}${i === p.at && i > 0 ? " left-off" : ""}" data-i="${String(i)}">
       <button type="button" class="grip" data-l="grip" title="Drag to move it, or use the arrow keys" aria-label="Move ${esc(name)}">${icon("grip")}</button>
       <span class="no">${String(i + 1).padStart(2, "0")}</span><i class="code ${code}" role="img" aria-label="${f ? CODE_NAME[code] ?? "Not known yet" : "Missing"}"></i>
@@ -3648,29 +3648,10 @@ function pauseNow(media) {
   media.pause();
 }
 
-/** Plays the file again from where it is, as sound alone or with its picture. @param {boolean} bare */
-function restage(bare) {
-  box.resume = { time: player()?.currentTime ?? 0, play: deck.wanted };
-  deck.soundOnly = bare;
-  leavePlayer();
-  paintBox();
-}
-
-// Out of sight Android stops a video, though not a sound, so the viewer carries on with the
-// file's sound alone from the same moment and brings the picture back on return. A paused one
-// goes too, or play pressed in the notification would start a video that Android stops at once.
 document.addEventListener("visibilitychange", () => {
   const media = player();
-  const f = current();
-  if (!media || !f || $("#lightbox").hidden) {
-    return;
-  }
-  if (document.hidden && !S.settings.background_play) {
+  if (media && !$("#lightbox").hidden && document.hidden && !S.settings.background_play) {
     pauseNow(media);
-  } else if (document.hidden && media instanceof HTMLVideoElement && document.documentElement.dataset["platform"] === "android") {
-    restage(true);
-  } else if (!document.hidden && deck.soundOnly) {
-    restage(false);
   }
 });
 
@@ -3685,7 +3666,7 @@ function mediaState() {
     playing: deck.wanted,
     title: f.name.replace(/\.[^.]+$/u, ""),
     path: f.path,
-    kind: f.sound ? "audio" : f.kind,
+    kind: kindOf(f),
     serial: f.serial ?? 0,
     picture: box.art?.path === f.path ? box.art.picture : "",
     wave: box.art?.path === f.path ? box.art.wave : "",
@@ -3754,8 +3735,6 @@ const box = {
   listId: "",
   listName: "",
   keep: /** @type {{ next: boolean, around: boolean } | null} */ (null),
-  /** Where the next player starts, when one file is played again as sound alone or with its picture. */
-  resume: /** @type {{ time: number, play: boolean } | null} */ (null),
   /** The pictures a phone's player shows for the file playing. */
   art: /** @type {{ path: string, picture: string, wave: string } | null} */ (null),
 };
@@ -3776,7 +3755,7 @@ function openBox(index) {
 function closeBox() {
   leavePlayer();
   window.clearTimeout(deck.sleepTimer);
-  Object.assign(deck, { sleep: 0, sleepAt: 0, soundOnly: false, wanted: false, shuffle: false });
+  Object.assign(deck, { sleep: 0, sleepAt: 0, wanted: false, shuffle: false });
   Object.assign(box, { listId: "", listName: "", keep: null });
   $("#lightbox").hidden = true;
   $("#lb-stage").innerHTML = "";
@@ -3787,9 +3766,14 @@ function current() {
   return box.list[box.i];
 }
 
-/** Whether a file has pictures to show, which a sound the phone saved as a video of black does not. @param {LibFile} f */
+/** What a file is to the listener: a sound the phone saved as a video of black is a sound. @param {LibFile} f */
+function kindOf(f) {
+  return f.sound ? "audio" : f.kind;
+}
+
+/** @param {LibFile} f */
 function pictured(f) {
-  return f.kind === "video" && !f.sound;
+  return kindOf(f) === "video";
 }
 
 /** @param {LibFile} f */
@@ -3801,8 +3785,12 @@ function paintMeta(f) {
 }
 
 function paintNav() {
-  $("#lb-stage .nav.prev").hidden = box.i <= 0;
-  $("#lb-stage .nav.next").hidden = box.i >= box.list.length - 1;
+  for (const button of $$("#lb-stage .prev")) {
+    button.hidden = box.i <= 0;
+  }
+  for (const button of $$("#lb-stage .next")) {
+    button.hidden = box.i >= box.list.length - 1;
+  }
 }
 
 function paintBox() {
@@ -3814,7 +3802,7 @@ function paintBox() {
   }
   $("#lb-name").textContent = f.name;
   $("#lb-no").textContent = f.serial ? String(f.serial).padStart(4, "0") : "";
-  $("#lb-code").className = `code ${CODE[f.kind] ?? "c-wait"}`;
+  $("#lb-code").className = `code ${CODE[kindOf(f)] ?? "c-wait"}`;
   paintMeta(f);
   const media = f.kind === "image" ? `<img src="${esc(f.uri)}" alt="">` : playerMarkup(f);
   $("#lb-stage").innerHTML = `${media}<button type="button" class="icon-btn nav prev" title="Previous (Left)" aria-label="Previous" ${box.i ? "" : "hidden"}>${icon("left")}</button><button type="button" class="icon-btn nav next" title="Next (Right)" aria-label="Next" ${box.i < box.list.length - 1 ? "" : "hidden"}>${icon("right")}</button>`;
@@ -4369,8 +4357,7 @@ const deck = {
   /** @type {number | undefined} */
   sleepTimer: undefined,
   fading: false,
-  /** Playing a video's sound alone while out of sight, and whether playing is what was asked for. */
-  soundOnly: false,
+  /** Whether playing is what was asked for. */
   wanted: false,
   remaining: false,
   fps: 30,
@@ -4442,7 +4429,7 @@ function marked() {
 
 /** @param {LibFile} f */
 function playerMarkup(f) {
-  const video = pictured(f) && !deck.soundOnly;
+  const video = pictured(f);
   /** @param {string} act @param {string} name @param {string} label @param {string} [extra] */
   const pb = (act, name, label, extra = "") => `<button type="button" class="icon-btn" data-p="${act}" title="${esc(label)}" aria-label="${esc(label)}" ${extra}>${icon(name)}</button>`;
   const media = video
@@ -4458,10 +4445,15 @@ function playerMarkup(f) {
         <div class="hover-time" hidden></div>
       </div>
       <div class="deck-bar">
-        ${pb("play", "pause", "Pause (Space)")}${pb("back", "back", "Back 10 seconds (J)")}${pb("forward", "forward", "Forward 10 seconds (L)")}
-        ${pb("mute", "volume", "Mute (M)")}<input type="range" class="volume" min="0" max="1" step="0.05" aria-label="Volume">
+        <div class="transport">
+          <button type="button" class="icon-btn prev" title="Previous" aria-label="Previous" ${box.i ? "" : "hidden"}>${icon("left")}</button>
+          ${pb("play", "pause", "Pause (Space)")}${pb("back", "back", `Back ${String(S.settings.skip_back)} seconds (J)`)}${pb("forward", "forward", `Forward ${String(S.settings.skip_forward)} seconds (L)`)}
+          <button type="button" class="icon-btn next" title="Next" aria-label="Next" ${box.i < box.list.length - 1 ? "" : "hidden"}>${icon("right")}</button>
+        </div>
+        <div class="level">${pb("mute", "volume", "Mute (M)")}<input type="range" class="volume" min="0" max="1" step="0.05" aria-label="Volume"></div>
         <button type="button" class="time" data-p="time" title="Show the time left">0:00 / 0:00</button>
         <span class="grow"></span>
+        <div class="modes">
         ${pb("subs", "captions", "Subtitles (C)", "hidden")}
         <button type="button" class="speed" data-p="speed" title="Speed (&lt; and &gt;)" aria-label="Speed">1×</button>
         ${pb("loop", "loop", "Loop (R): the marked part, or all of it", 'aria-pressed="false"')}
@@ -4469,6 +4461,7 @@ function playerMarkup(f) {
         ${pb("shuffle", "shuffle", "Shuffle the rest", 'aria-pressed="false" hidden')}
         <button type="button" class="icon-btn sleep" data-p="sleep" title="Sleep timer" aria-label="Sleep timer" aria-pressed="false">${icon("moon")}<b class="sleep-left"></b></button>
         ${pictureOnly}
+        </div>
       </div>
     </div></div>`;
 }
@@ -4485,18 +4478,11 @@ function setupPlayer(f) {
   media.muted = prefs.muted;
   media.playbackRate = prefs.speed;
   media.loop = deck.loop && !marked();
-  const resume = box.resume;
-  box.resume = null;
-  if (resume) {
-    // Set before the file loads, it reads back as this time even if the player is swapped again first.
-    media.currentTime = resume.time;
-    media.autoplay = resume.play;
-  }
   const keep = box.keep ?? prefs;
   Object.assign(deck, { next: keep.next, around: keep.around, tracks: [], track: -1, fps: 30 });
   on(media, "loadedmetadata", () => {
     const left = prefs.at[f.path];
-    if (!resume && left !== undefined && left < media.duration - 5) {
+    if (left !== undefined && left < media.duration - 5) {
       media.currentTime = left;
       toast(`Carrying on from ${dur(left)}`);
     }
@@ -4518,9 +4504,9 @@ function setupPlayer(f) {
     if (media !== player()) {
       return;
     }
-    // Android pauses a hidden video by itself, which is not the listener asking for it. A sound
-    // playing out of sight is never paused that way, so a call or another app's music stops it for real.
-    if (!document.hidden || deck.soundOnly) {
+    // Chromium pauses a video in a page out of sight, which is not the listener asking for it, and
+    // plays it again once the page is back. The phone app keeps a playing page in sight, though.
+    if (!document.hidden) {
       deck.wanted = false;
     }
     announcePlayback();
@@ -4622,10 +4608,10 @@ async function controlClick(event, root, media, f) {
       await togglePlay(media);
       break;
     case "back":
-      seek(media, -10);
+      seek(media, -S.settings.skip_back);
       break;
     case "forward":
-      seek(media, 10);
+      seek(media, S.settings.skip_forward);
       break;
     case "mute":
       toggleMute(media);
@@ -5601,10 +5587,10 @@ function viewerKeys(event) {
         }
       },
       j: () => {
-        seek(media, -10);
+        seek(media, -S.settings.skip_back);
       },
       l: () => {
-        seek(media, 10);
+        seek(media, S.settings.skip_forward);
       },
       ArrowUp: () => {
         nudgeVolume(media, 0.05);

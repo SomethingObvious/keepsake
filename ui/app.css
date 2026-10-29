@@ -3549,6 +3549,15 @@
     color: inherit;
   }
 
+  /* The deck's groups only shape a phone's layout, and the transport's Previous and Next are a phone's too. */
+  .player :is(.transport, .level, .modes) {
+    display: contents;
+  }
+
+  .player .transport :is(.prev, .next) {
+    display: none;
+  }
+
   .player .deck-bar [aria-pressed="true"] {
     border-color: var(--ink);
     color: var(--ink);
@@ -4749,12 +4758,143 @@
       transform: none;
     }
 
-    .player.audio {
-      padding: 0 12px;
+    /* A phone's deck is the time and the quieter switches on one line, then the transport under
+      them, or over the middle of a video, with play the largest. Its own buttons do the volume. */
+    .player .deck-bar {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
     }
 
-    .player .deck-bar {
+    .player :is(.grow, .level, .big-state, [data-p="frame"]),
+    .stage:has(.player) > .nav {
+      display: none;
+    }
+
+    .player .time {
+      justify-self: start;
+      padding-left: 0;
+    }
+
+    .player .modes {
+      display: flex;
       flex-wrap: wrap;
+      justify-content: flex-end;
+      color: var(--text-dim);
+    }
+
+    /* Fixed columns, so a missing Previous or Next leaves its gap and play stays in the middle. */
+    .player .transport {
+      display: grid;
+      grid-row: 2;
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      place-items: center;
+      color: var(--text);
+    }
+
+    .player .transport .prev {
+      display: grid;
+      grid-column: 1;
+    }
+
+    .player .transport [data-p="back"] {
+      grid-column: 2;
+    }
+
+    .player .transport [data-p="forward"] {
+      grid-column: 4;
+    }
+
+    .player .transport .next {
+      display: grid;
+      grid-column: 5;
+    }
+
+    .player .transport .icon-btn {
+      grid-row: 1;
+      width: 56px;
+      height: 56px;
+    }
+
+    .player .transport .icon-btn .i {
+      width: 24px;
+      height: 24px;
+    }
+
+    .player .transport [data-p="play"] {
+      grid-column: 3;
+      width: 72px;
+      height: 72px;
+      border-color: var(--ink);
+    }
+
+    .player .transport [data-p="play"] .i {
+      width: 30px;
+      height: 30px;
+    }
+
+    .player .transport :is(.prev, .next) {
+      color: var(--text-dim);
+    }
+
+    /* A sound's waveform takes what height the deck leaves, and the deck sits at the bottom, under the thumb. */
+    .player.audio {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      height: 100%;
+      padding: 16px 16px 12px;
+    }
+
+    .player.audio .art {
+      flex: 1 1 0;
+      grid-template-rows: minmax(0, 1fr);
+      min-height: 96px;
+      margin-bottom: 8px;
+    }
+
+    .player.audio .art .sound {
+      height: 100%;
+    }
+
+    .player.audio .transport {
+      margin-top: 12px;
+    }
+
+    /* Over a video the transport sits in the middle of the picture and the line along the bottom,
+      and a press anywhere else still reaches the video. Hidden controls take no presses. */
+    .player.video .controls {
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 12px 4px;
+      background: linear-gradient(transparent 55%, rgb(0 0 0 / 70%));
+      pointer-events: none;
+    }
+
+    .player.video .controls :is(button, .timeline) {
+      pointer-events: auto;
+    }
+
+    .player.video.idle .controls :is(button, .timeline) {
+      pointer-events: none;
+    }
+
+    .player.video .transport {
+      position: absolute;
+      inset: 0;
+      height: 72px;
+      margin: auto;
+    }
+
+    .player.video .transport .icon-btn {
+      background: rgb(0 0 0 / 45%);
+    }
+
+    .player .captions {
+      bottom: 104px;
     }
 
     /* Start and End over each other with their Mark buttons, and Clear Clip beside both. */

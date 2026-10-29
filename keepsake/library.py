@@ -24,7 +24,8 @@ def files(folder: str) -> list[dict[str, object]]:
     for directory, _, names in root.walk():
         for name in names:
             what = kind(name)
-            if not what:
+            # A dot hides a file, and Android keeps a deleted one for a month as .trashed-...
+            if not what or name.startswith("."):
                 continue
             path = directory / name
             try:
