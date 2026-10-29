@@ -647,6 +647,10 @@
               <div class="c"><input type="checkbox" class="switch" data-set="notify" aria-label="Notifications"></div></div>
             <div class="setting"><div><div class="l">Keep playing out of sight</div><div class="h">With the screen off, or another app or window in front</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="background_play" aria-label="Keep playing out of sight"></div></div>
+            <div class="setting"><div><div class="l">Skip back</div><div class="h">How far the player's back button goes</div></div>
+              <div class="c"><label class="visually-hidden" for="skip-back">Skip back</label><select class="field" id="skip-back" data-set="skip_back"><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select></div></div>
+            <div class="setting"><div><div class="l">Skip forward</div><div class="h">How far the player's forward button goes</div></div>
+              <div class="c"><label class="visually-hidden" for="skip-forward">Skip forward</label><select class="field" id="skip-forward" data-set="skip_forward"><option value="5">5 seconds</option><option value="10">10 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option></select></div></div>
             <div class="setting" data-phone><div><div class="l">Player in the notification bar</div><div class="h">Play, pause and skip from the notification bar, the lock screen and headphones</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="media_controls" aria-label="Player in the notification bar"></div></div>
             <div class="setting"><div><div class="l">A sound when a download finishes</div></div>
@@ -815,7 +819,7 @@
         <dt><kbd>Esc</kbd></dt><dd>Back to the library</dd>
         <dt><kbd>Space</kbd> <kbd>K</kbd></dt><dd>Play or pause</dd>
         <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Back or forward 5 seconds; for pictures, the previous or next one</dd>
-        <dt><kbd>J</kbd> <kbd>L</kbd></dt><dd>Back or forward 10 seconds</dd>
+        <dt><kbd>J</kbd> <kbd>L</kbd></dt><dd>Back or forward, 10 seconds unless Settings says otherwise</dd>
         <dt><kbd>,</kbd> <kbd>.</kbd></dt><dd>One frame back or forward</dd>
         <dt><kbd>&lt;</kbd> <kbd>&gt;</kbd></dt><dd>Slower or faster</dd>
         <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Louder or quieter; <kbd>M</kbd> mutes</dd>
