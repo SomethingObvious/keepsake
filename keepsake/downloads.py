@@ -124,6 +124,15 @@ class History:
                     found[os.path.normcase(str(name))] = serial
         return found
 
+    def sounds(self) -> set[str]:
+        """Return the files downloaded as sound, by their paths as Windows compares them."""
+        return {
+            os.path.normcase(str(name))
+            for entry in self.entries
+            if entry.get("mode") == "audio"
+            for name in store.items(entry.get("files"))
+        }
+
     def forget(self, entry_id: str) -> None:
         """Drop one record."""
         self.entries = [e for e in self.entries if e.get("id") != entry_id]

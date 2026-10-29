@@ -166,3 +166,15 @@ def test_a_download_keeps_its_unfinished_files_in_its_own_folder(
     job = make()
     jobs.run_ytdlp(job, None)
     assert f"temp:{working_folder(job)}" in seen[0]
+
+
+def test_ffmpeg_progress_becomes_a_percentage_and_time_left() -> None:
+    """Its speed, as so many times faster than playing, is turned into the time it has left."""
+    job = make()
+    reader = jobs.FfmpegReader(job, 600)
+    reader("out_time_us=150000000")
+    reader("speed=N/A")
+    assert job.pct == 25.0
+    assert job.eta is None
+    reader("speed=100x")
+    assert job.eta == 4.5

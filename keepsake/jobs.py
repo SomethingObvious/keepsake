@@ -430,12 +430,13 @@ def run_gallery(job: Job, credentials: Credentials | None) -> Outcome:
 
 
 class FfmpegReader:
-    """Turns ffmpeg's -progress output into a percentage."""
+    """Turns ffmpeg's -progress output into a percentage and the time left."""
 
     def __init__(self, job: Job, length: float | None) -> None:
         """Read into this job; `length` is the output's expected duration in seconds."""
         self.job = job
         self.length = length
+        self.done = 0.0
         self.last_error = ""
 
     def __call__(self, line: str) -> None:
@@ -444,9 +445,12 @@ class FfmpegReader:
         if key == "out_time_us" and self.length:
             done = number(value)
             if done is not None:
-                self.job.pct = max(0.0, min(100.0, done / 1_000_000 / self.length * 100))
-        elif key == "speed":
-            self.job.stage = f"{self.job.stage.split(' · ')[0]} · {value.strip()}"
+                self.done = done / 1_000_000
+                self.job.pct = max(0.0, min(100.0, self.done / self.length * 100))
+        elif key == "speed" and self.length:
+            # ffmpeg's speed is so many times faster than playing, "100x", shown as time left.
+            speed = number(value.strip().removesuffix("x"))
+            self.job.eta = max(0.0, self.length - self.done) / speed if speed else None
         elif "=" not in line:
             self.job.log.append(line)
             if "error" in line.lower():
@@ -455,7 +459,7 @@ class FfmpegReader:
 
 def run_ffmpeg(job: Job, command: list[str], length: float | None, target: Path) -> Outcome:
     """Run one ffmpeg conversion and keep its output file."""
-    job.tool, job.pct = "ffmpeg", 0.0
+    job.tool, job.pct, job.speed, job.eta = "ffmpeg", 0.0, None, None
     reader = FfmpegReader(job, length)
     code = execute(job, command, reader)
     if job.stop:

@@ -2954,7 +2954,7 @@ function renderLibrary() {
     const thumb = `<img data-path="${esc(f.path)}" data-key="${esc(thumbKey(f))}" data-uri="${esc(f.uri)}"${known ? ` src="${esc(known)}"` : ""} width="176" height="176" decoding="async" alt=""`;
     const media = f.kind === "image"
       ? `${thumb}>`
-      : f.kind === "video" ? `${thumb} data-video>${known ? "" : icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
+      : pictured(f) ? `${thumb} data-video>${known ? "" : icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
     const where = f.folder === "." ? f.name : `${f.folder}\\${f.name}`;
     const picked = S.libPicked.has(f.path);
     return `<button type="button" class="tile${picked ? " picked" : ""}" data-i="${String(i)}" aria-label="${S.libPicking ? "Pick" : "View"} ${esc(f.name)}"${S.libPicking ? ` aria-pressed="${String(picked)}"` : ""}><span class="ph">${media}<span class="tick">${icon("check")}</span><span class="kind"><i class="code ${CODE[f.kind] ?? "c-wait"}"></i>${f.serial ? `${String(f.serial).padStart(4, "0")} ` : ""}${esc(ext)}</span></span>
@@ -3667,7 +3667,7 @@ document.addEventListener("visibilitychange", () => {
   }
   if (document.hidden && !S.settings.background_play) {
     pauseNow(media);
-  } else if (document.hidden && !deck.soundOnly && f.kind === "video" && document.documentElement.dataset["platform"] === "android") {
+  } else if (document.hidden && media instanceof HTMLVideoElement && document.documentElement.dataset["platform"] === "android") {
     restage(true);
   } else if (!document.hidden && deck.soundOnly) {
     restage(false);
@@ -3685,7 +3685,7 @@ function mediaState() {
     playing: deck.wanted,
     title: f.name.replace(/\.[^.]+$/u, ""),
     path: f.path,
-    kind: f.kind,
+    kind: f.sound ? "audio" : f.kind,
     serial: f.serial ?? 0,
     picture: box.art?.path === f.path ? box.art.picture : "",
     wave: box.art?.path === f.path ? box.art.wave : "",
@@ -3787,6 +3787,11 @@ function current() {
   return box.list[box.i];
 }
 
+/** Whether a file has pictures to show, which a sound the phone saved as a video of black does not. @param {LibFile} f */
+function pictured(f) {
+  return f.kind === "video" && !f.sound;
+}
+
 /** @param {LibFile} f */
 function paintMeta(f) {
   const where = `${String(box.i + 1)} of ${String(box.list.length)}`;
@@ -3817,7 +3822,7 @@ function paintBox() {
     setupPlayer(f);
   }
   viewerZoom?.reset();
-  $("#lb-after").hidden = !(S.afterimage && f.kind === "video");
+  $("#lb-after").hidden = !(S.afterimage && pictured(f));
   $("#lb-add").hidden = f.kind === "image";
   if (box.listId) {
     rememberListPlace(f);
@@ -3839,13 +3844,13 @@ function paintBox() {
     }).catch(report);
   }
   paintTextRemoval();
-  $("#lb-frame").hidden = f.kind !== "video";
+  $("#lb-frame").hidden = !pictured(f);
   $("#lb-tools").hidden = f.kind === "image";
   // Sound cuts exactly either way, and a GIF needs pictures.
-  $("#lb-clip .opener").hidden = f.kind !== "video";
-  $("[data-convert='gif']").hidden = f.kind !== "video";
+  $("#lb-clip .opener").hidden = !pictured(f);
+  $("[data-convert='gif']").hidden = !pictured(f);
   const clip = $("#lb-clip [data-convert]");
-  if (f.kind !== "video") {
+  if (!pictured(f)) {
     clip.dataset["convert"] = "trim";
   }
   for (const split of $$(".split")) {
@@ -3952,7 +3957,7 @@ function paintSpan() {
 function showWave(f) {
   const art = document.querySelector("#lb-stage .art");
   viewerClip?.wave("");
-  if (f.kind !== "audio") {
+  if (f.kind !== "audio" && !f.sound) {
     return;
   }
   api().waveform(f.path).then((url) => {
@@ -4437,7 +4442,7 @@ function marked() {
 
 /** @param {LibFile} f */
 function playerMarkup(f) {
-  const video = f.kind === "video" && !deck.soundOnly;
+  const video = pictured(f) && !deck.soundOnly;
   /** @param {string} act @param {string} name @param {string} label @param {string} [extra] */
   const pb = (act, name, label, extra = "") => `<button type="button" class="icon-btn" data-p="${act}" title="${esc(label)}" aria-label="${esc(label)}" ${extra}>${icon(name)}</button>`;
   const media = video
