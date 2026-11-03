@@ -7,6 +7,8 @@ extend-exclude = ["package-lock.json", "*.ico", "*.onnx"]
 # yt-dlp's name for a Pixiv animation, and a flag of gallery-dl's.
 ugoira = "ugoira"
 Ugoira = "Ugoira"
+# The MP4 box that holds a track.
+trak = "trak"
 # FFmpeg's names.
 mjpeg = "mjpeg"
 nvenc = "nvenc"

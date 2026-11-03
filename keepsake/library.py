@@ -7,7 +7,7 @@ import uuid
 from contextlib import closing
 from pathlib import Path
 
-from keepsake import APP, paths, store
+from keepsake import APP, media, paths, store
 from keepsake.links import kind
 
 MOST = 5000  # files the library shows; the newest win
@@ -37,7 +37,8 @@ def files(folder: str) -> list[dict[str, object]]:
                     "path": str(path),
                     "uri": path.as_uri(),
                     "name": name,
-                    "kind": what,
+                    # The phone saves a sound under a still picture, and it is the sound it was.
+                    "kind": "audio" if what == "video" and media.still_sound(path) else what,
                     "size": stat.st_size,
                     "time": getattr(stat, "st_birthtime", stat.st_mtime),
                     "folder": str(directory.relative_to(root)),

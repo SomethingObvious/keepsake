@@ -2921,7 +2921,7 @@ async function loadLibrary() {
 function libItems() {
   const query = /** @type {HTMLInputElement} */ ($("#libq")).value.trim().toLowerCase();
   const sort = /** @type {HTMLSelectElement} */ ($("#libsort")).value;
-  const items = S.lib.filter((f) => (S.libFilter === "all" || kindOf(f) === S.libFilter) &&
+  const items = S.lib.filter((f) => (S.libFilter === "all" || f.kind === S.libFilter) &&
     (!query || f.name.toLowerCase().includes(query) || f.folder.toLowerCase().includes(query)));
   /** @type {Record<string, (a: LibFile, b: LibFile) => number>} */
   const orders = {
@@ -2954,10 +2954,10 @@ function renderLibrary() {
     const thumb = `<img data-path="${esc(f.path)}" data-key="${esc(thumbKey(f))}" data-uri="${esc(f.uri)}"${known ? ` src="${esc(known)}"` : ""} width="176" height="176" decoding="async" alt=""`;
     const media = f.kind === "image"
       ? `${thumb}>`
-      : pictured(f) ? `${thumb} data-video>${known ? "" : icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
+      : f.kind === "video" ? `${thumb} data-video>${known ? "" : icon("film")}` : `<span class="wave" data-path="${esc(f.path)}"></span>${icon("music")}`;
     const where = f.folder === "." ? f.name : `${f.folder}\\${f.name}`;
     const picked = S.libPicked.has(f.path);
-    return `<button type="button" class="tile${picked ? " picked" : ""}" data-i="${String(i)}" aria-label="${S.libPicking ? "Pick" : "View"} ${esc(f.name)}"${S.libPicking ? ` aria-pressed="${String(picked)}"` : ""}><span class="ph">${media}<span class="tick">${icon("check")}</span><span class="kind"><i class="code ${CODE[kindOf(f)] ?? "c-wait"}"></i>${f.serial ? `${String(f.serial).padStart(4, "0")} ` : ""}${esc(ext)}</span></span>
+    return `<button type="button" class="tile${picked ? " picked" : ""}" data-i="${String(i)}" aria-label="${S.libPicking ? "Pick" : "View"} ${esc(f.name)}"${S.libPicking ? ` aria-pressed="${String(picked)}"` : ""}><span class="ph">${media}<span class="tick">${icon("check")}</span><span class="kind"><i class="code ${CODE[f.kind] ?? "c-wait"}"></i>${f.serial ? `${String(f.serial).padStart(4, "0")} ` : ""}${esc(ext)}</span></span>
       <span class="cap"><span class="n" title="${esc(where)}">${esc(f.name)}</span><span class="m">${esc(bytes(f.size))}, ${esc(ago(f.time))}</span></span></button>`;
   }).join("");
   $("#libempty").hidden = items.length > 0;
@@ -3336,7 +3336,7 @@ function listDetail(p) {
   const items = p.files.map((path, i) => {
     const f = known.get(path);
     const name = f?.name ?? path.split(/[\\/]/u).pop() ?? path;
-    const code = f ? CODE[kindOf(f)] ?? "c-wait" : "c-wait";
+    const code = f ? CODE[f.kind] ?? "c-wait" : "c-wait";
     return `<div class="list-item${f ? "" : " gone"}${i === p.at && i > 0 ? " left-off" : ""}" data-i="${String(i)}">
       <button type="button" class="grip" data-l="grip" title="Drag to move it, or use the arrow keys" aria-label="Move ${esc(name)}">${icon("grip")}</button>
       <span class="no">${String(i + 1).padStart(2, "0")}</span><i class="code ${code}" role="img" aria-label="${f ? CODE_NAME[code] ?? "Not known yet" : "Missing"}"></i>
@@ -3666,7 +3666,7 @@ function mediaState() {
     playing: deck.wanted,
     title: f.name.replace(/\.[^.]+$/u, ""),
     path: f.path,
-    kind: kindOf(f),
+    kind: f.kind,
     serial: f.serial ?? 0,
     picture: box.art?.path === f.path ? box.art.picture : "",
     wave: box.art?.path === f.path ? box.art.wave : "",
@@ -3766,16 +3766,6 @@ function current() {
   return box.list[box.i];
 }
 
-/** What a file is to the listener: a sound the phone saved as a video of black is a sound. @param {LibFile} f */
-function kindOf(f) {
-  return f.sound ? "audio" : f.kind;
-}
-
-/** @param {LibFile} f */
-function pictured(f) {
-  return kindOf(f) === "video";
-}
-
 /** @param {LibFile} f */
 function paintMeta(f) {
   const where = `${String(box.i + 1)} of ${String(box.list.length)}`;
@@ -3802,7 +3792,7 @@ function paintBox() {
   }
   $("#lb-name").textContent = f.name;
   $("#lb-no").textContent = f.serial ? String(f.serial).padStart(4, "0") : "";
-  $("#lb-code").className = `code ${CODE[kindOf(f)] ?? "c-wait"}`;
+  $("#lb-code").className = `code ${CODE[f.kind] ?? "c-wait"}`;
   paintMeta(f);
   const media = f.kind === "image" ? `<img src="${esc(f.uri)}" alt="">` : playerMarkup(f);
   $("#lb-stage").innerHTML = `${media}<button type="button" class="icon-btn nav prev" title="Previous (Left)" aria-label="Previous" ${box.i ? "" : "hidden"}>${icon("left")}</button><button type="button" class="icon-btn nav next" title="Next (Right)" aria-label="Next" ${box.i < box.list.length - 1 ? "" : "hidden"}>${icon("right")}</button>`;
@@ -3810,7 +3800,7 @@ function paintBox() {
     setupPlayer(f);
   }
   viewerZoom?.reset();
-  $("#lb-after").hidden = !(S.afterimage && pictured(f));
+  $("#lb-after").hidden = !(S.afterimage && f.kind === "video");
   $("#lb-add").hidden = f.kind === "image";
   if (box.listId) {
     rememberListPlace(f);
@@ -3832,13 +3822,13 @@ function paintBox() {
     }).catch(report);
   }
   paintTextRemoval();
-  $("#lb-frame").hidden = !pictured(f);
+  $("#lb-frame").hidden = f.kind !== "video";
   $("#lb-tools").hidden = f.kind === "image";
   // Sound cuts exactly either way, and a GIF needs pictures.
-  $("#lb-clip .opener").hidden = !pictured(f);
-  $("[data-convert='gif']").hidden = !pictured(f);
+  $("#lb-clip .opener").hidden = f.kind !== "video";
+  $("[data-convert='gif']").hidden = f.kind !== "video";
   const clip = $("#lb-clip [data-convert]");
-  if (!pictured(f)) {
+  if (f.kind !== "video") {
     clip.dataset["convert"] = "trim";
   }
   for (const split of $$(".split")) {
@@ -3945,7 +3935,7 @@ function paintSpan() {
 function showWave(f) {
   const art = document.querySelector("#lb-stage .art");
   viewerClip?.wave("");
-  if (f.kind !== "audio" && !f.sound) {
+  if (f.kind !== "audio") {
     return;
   }
   api().waveform(f.path).then((url) => {
@@ -4429,7 +4419,7 @@ function marked() {
 
 /** @param {LibFile} f */
 function playerMarkup(f) {
-  const video = pictured(f);
+  const video = f.kind === "video";
   /** @param {string} act @param {string} name @param {string} label @param {string} [extra] */
   const pb = (act, name, label, extra = "") => `<button type="button" class="icon-btn" data-p="${act}" title="${esc(label)}" aria-label="${esc(label)}" ${extra}>${icon(name)}</button>`;
   const media = video
@@ -4474,8 +4464,10 @@ function setupPlayer(f) {
     return;
   }
   const prefs = playerPrefs();
-  media.volume = prefs.volume;
-  media.muted = prefs.muted;
+  // A phone's player has no volume of its own, so one saved before it lost them is not kept.
+  const phone = document.documentElement.dataset["platform"] === "android";
+  media.volume = phone ? 1 : prefs.volume;
+  media.muted = !phone && prefs.muted;
   media.playbackRate = prefs.speed;
   media.loop = deck.loop && !marked();
   const keep = box.keep ?? prefs;

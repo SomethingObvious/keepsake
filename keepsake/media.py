@@ -5,6 +5,7 @@ import glob
 import hashlib
 import io
 import json
+import mmap
 import os
 import re
 import threading
@@ -27,6 +28,7 @@ VIDEO_INTRO = 8  # seconds: a video shorter than this shows its first frame
 # The library asks for every tile on screen at once. Two at a time keeps a slow
 # computer usable while they are made, and each is made only once.
 DRAWING = threading.BoundedSemaphore(2)
+WAVES: dict[Path, threading.Lock] = {}  # one for each waveform being drawn
 
 
 def ffmpeg() -> str:
@@ -87,6 +89,62 @@ def codecs(path: Path) -> tuple[str, str]:
         )
 
     return first("video"), first("audio")
+
+
+def still_sound(path: Path) -> bool:
+    """Return whether a file is a sound under a still black picture, the way the phone saves one.
+
+    Android files an MP4 with a picture track as a video, so the phone keeps sounds in a
+    640x360 picture at ten frames a second or fewer, which no real download looks like.
+    """
+    if path.suffix.lower() != ".mp4":
+        return False
+    try:
+        stat = path.stat()
+    except OSError:
+        return False
+    return still_tracks(str(path), stat.st_size, stat.st_mtime_ns)
+
+
+@functools.lru_cache(maxsize=20_000)
+def still_tracks(path: str, _size: int, _changed: int) -> bool:
+    """Read an MP4's tracks for `still_sound`, once for each version of the file."""
+    try:
+        # Mapped, only the few pages holding the boxes read are read from the disk.
+        with Path(path).open("rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as data:
+            sound, pictures = False, list[bool]()
+            for name, _, start, end in boxes(data, *box_in(data, 0, len(data), b"moov")):
+                handler = b""
+                if name == b"trak":
+                    at = box_in(data, start, end, b"mdia", b"hdlr")[0]
+                    handler = data[at + 8 : at + 12]
+                sound = sound or handler == b"soun"
+                if handler == b"vide":
+                    pictures.append(still_track(data, start, end))
+    except (OSError, ValueError, IndexError):
+        return False
+    return sound and bool(pictures) and all(pictures)
+
+
+def still_track(data: bytes | mmap.mmap, start: int, end: int) -> bool:
+    """Return whether one video track is 640x360 at ten frames a second or fewer."""
+    tkhd = box_in(data, start, end, b"tkhd")[1]
+    width, height = number(data, tkhd - 8, 2), number(data, tkhd - 4, 2)
+    mdhd = box_in(data, start, end, b"mdia", b"mdhd")[0]
+    timescale = number(data, mdhd + (20 if data[mdhd] else 12), 4)
+    stts = box_in(data, start, end, b"mdia", b"minf", b"stbl", b"stts")[0]
+    return (width, height) == (640, 360) and number(data, stts + 12, 4) * 10 >= timescale
+
+
+def box_in(data: bytes | mmap.mmap, start: int, end: int, *names: bytes) -> tuple[int, int]:
+    """Return where the insides of a box start and end, found by the names of the boxes it is in."""
+    for name in names:
+        found = next(((s, e) for n, _, s, e in boxes(data, start, end) if n == name), None)
+        if not found:
+            message = f"no {name!r} box"
+            raise ValueError(message)
+        start, end = found
+    return start, end
 
 
 def plays_everywhere(path: Path) -> bool:
@@ -257,8 +315,15 @@ def trim_command(source: Path, target: Path, start: float, end: float, *, exact:
             str(target),
         ]
     # A video can only start at a keyframe, so it seeks to the one before. Sound alone cuts
-    # exactly when the seek comes after the input.
-    sound_only = not codecs(source)[0]
+    # exactly when the seek comes after the input, and a phone's still picture is drawn again.
+    still = still_sound(source)
+    sound_only = still or not codecs(source)[0]
+    if target.suffix.lower() == ".flac":
+        codec = ["-c:a", "flac"]
+    elif still:
+        codec = ["-c:v", h264_encoder(), "-c:a", "copy"]
+    else:
+        codec = ["-c", "copy"]
     return [
         ffmpeg(),
         "-hide_banner",
@@ -267,7 +332,7 @@ def trim_command(source: Path, target: Path, start: float, end: float, *, exact:
         "-i",
         str(source),
         *(span if sound_only else []),
-        *(["-c:a", "flac"] if target.suffix.lower() == ".flac" else ["-c", "copy"]),
+        *codec,
         "-avoid_negative_ts",
         "make_zero",
         "-progress",
@@ -502,7 +567,7 @@ def strip_gif(data: bytes) -> bytes:
 type Box = tuple[bytes, int, int, int]  # type, start, payload start, end
 
 
-def boxes(data: bytes, start: int, end: int) -> list[Box]:
+def boxes(data: bytes | mmap.mmap, start: int, end: int) -> list[Box]:
     """Return the ISO boxes between two offsets, as AVIF, HEIC and JPEG XL files hold them."""
     found: list[Box] = []
     at = start
@@ -525,7 +590,7 @@ def boxes(data: bytes, start: int, end: int) -> list[Box]:
 TYPED_ENTRY = WIDE_LIST = 2
 
 
-def number(data: bytes, at: int, width: int) -> int:
+def number(data: bytes | mmap.mmap, at: int, width: int) -> int:
     """Read a big-endian number of `width` bytes (none is zero)."""
     return int.from_bytes(data[at : at + width], "big")
 
@@ -808,7 +873,10 @@ def waveform(path: Path, folder: Path) -> Path | None:
     draw = "aformat=channel_layouts=mono,showwavespic=s=1600x200:colors=0xecebe6:scale=sqrt"
     command = [ffmpeg(), "-v", "error", "-i", str(path), "-filter_complex", draw]
     command += ["-frames:v", "1", "-y", str(target)]
-    with DRAWING:
+    # The phone's player and the viewer ask for one file's at the same moment, and it is drawn once.
+    with WAVES.setdefault(target, threading.Lock()), DRAWING:
+        if target.is_file():
+            return target
         done = process.run(command, timeout=120)
     return target if done.returncode == 0 and target.is_file() else None
 

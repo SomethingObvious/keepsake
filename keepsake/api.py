@@ -317,20 +317,17 @@ class Api:
     def library(self) -> list[Data]:
         """Return the pictures, videos and sounds in the download folders."""
         unique: dict[str, Data] = {}
-        for folder in self._app.folders().values():
-            for entry in library.files(str(folder)):
+        # Every kind can go to one folder, which is walked once.
+        folders = {os.path.normcase(str(f)): str(f) for f in self._app.folders().values()}
+        for folder in folders.values():
+            for entry in library.files(folder):
                 unique.setdefault(os.path.normcase(str(entry["path"])), entry)
         found = sorted(unique.values(), key=lambda entry: -float(str(entry["time"])))
         numbers = self._app.queue.history.serials()
-        sounds = self._app.queue.history.sounds()
         for entry in found[: library.MOST]:
-            path = os.path.normcase(str(entry["path"]))
-            serial = numbers.get(path)
+            serial = numbers.get(os.path.normcase(str(entry["path"])))
             if serial:
                 entry["serial"] = serial
-            # The phone saves a sound as a video of a black picture, played as the sound it is.
-            if entry["kind"] == "video" and path in sounds:
-                entry["sound"] = True
         return found[: library.MOST]
 
     def convert(self, path: object, how: object, start: object = 0, end: object = 0) -> str:

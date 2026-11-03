@@ -178,3 +178,13 @@ def test_ffmpeg_progress_becomes_a_percentage_and_time_left() -> None:
     assert job.eta is None
     reader("speed=100x")
     assert job.eta == 4.5
+
+
+def test_ffmpeg_with_no_length_shows_its_speed() -> None:
+    """A file whose length cannot be read still shows that the conversion is moving."""
+    job = make()
+    job.stage = "Converting"
+    reader = jobs.FfmpegReader(job, None)
+    reader("speed=26.2x")
+    assert job.stage == "Converting · 26.2x"
+    assert job.eta is None

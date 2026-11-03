@@ -451,6 +451,9 @@ class FfmpegReader:
             # ffmpeg's speed is so many times faster than playing, "100x", shown as time left.
             speed = number(value.strip().removesuffix("x"))
             self.job.eta = max(0.0, self.length - self.done) / speed if speed else None
+        elif key == "speed":
+            # With no length there is no time left, so the speed is the sign it is moving.
+            self.job.stage = f"{self.job.stage.split(' · ')[0]} · {value.strip()}"
         elif "=" not in line:
             self.job.log.append(line)
             if "error" in line.lower():

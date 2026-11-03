@@ -400,3 +400,40 @@ def test_flac_is_always_encoded_so_its_header_has_the_clip_length(
     cut = trim_command(Path("a.flac"), Path("a (clip).flac"), 3, 8, exact=False)
     assert cut[cut.index("-c:a") + 1] == "flac"
     assert "copy" not in cut
+
+
+def phone_sound(target: Path, rate: int, *extra: str) -> Path:
+    """Make a sound the way the phone saves one, under a black 640x360 picture."""
+    assert FFMPEG
+    picture = f"color=c=black:s=640x360:r={rate}:d=20"
+    make = [FFMPEG, "-v", "error", "-f", "lavfi", "-i", picture, "-f", "lavfi", "-i", "sine=d=20"]
+    subprocess.run([*make, "-g", "5", *extra, str(target)], check=True, capture_output=True)
+    return target
+
+
+@pytest.mark.skipif(not FFMPEG, reason="needs ffmpeg")
+def test_sounds_the_phone_kept_as_video_count_as_sound(tmp_path: Path) -> None:
+    """Whether its index comes first or last, and at the frame rates the phone has used."""
+    assert FFMPEG
+    assert media.still_sound(phone_sound(tmp_path / "Now.mp4", 1, "-movflags", "+faststart"))
+    assert media.still_sound(phone_sound(tmp_path / "Before.mp4", 10))
+    assert not media.still_sound(phone_sound(tmp_path / "Film.mp4", 30))
+    silent = tmp_path / "Silent.mp4"
+    make = [FFMPEG, "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=640x360:r=1:d=3"]
+    subprocess.run([*make, str(silent)], check=True, capture_output=True)
+    assert not media.still_sound(silent)
+    (tmp_path / "Broken.mp4").write_bytes(b"\0\0\0\x08moov\0\0")
+    assert not media.still_sound(tmp_path / "Broken.mp4")
+
+
+@pytest.mark.skipif(not (FFMPEG and FFPROBE), reason="needs ffmpeg")
+def test_phone_sounds_cut_exactly_without_a_keyframe(tmp_path: Path) -> None:
+    """Its picture has a keyframe every 5 seconds, which a cut by keyframes would start at."""
+    assert FFPROBE
+    sound = phone_sound(tmp_path / "Song.mp4", 1)
+    clip = tmp_path / "Clip.mp4"
+    subprocess.run(
+        media.trim_command(sound, clip, 7, 12, exact=False), check=True, capture_output=True
+    )
+    assert media.duration(clip) == pytest.approx(5, abs=0.1)
+    assert media.still_sound(clip)
