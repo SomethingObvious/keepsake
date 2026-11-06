@@ -18,4 +18,5 @@ globs:
 ignores:
   - "**/node_modules/**"
   - build/**
+  - android/**/build/**
   - dist/**

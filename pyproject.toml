@@ -6,7 +6,9 @@
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["node_modules", "build", "dist"]
+# android/ runs under Chaquopy with stand-ins for Windows' modules, and is
+# checked when Gradle builds it rather than held to the desktop's rules.
+extend-exclude = ["node_modules", "build", "dist", "android"]
 
 [tool.ruff.lint]
 # Every rule ruff has. Hand-picking families is how a rule that would have

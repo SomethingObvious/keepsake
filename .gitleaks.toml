@@ -9,4 +9,6 @@ paths = [
   '''package-lock\.json$''',
   '''^build/''',
   '''^dist/''',
+  '''^android/(app/)?build/''',
+  '''^android/\.gradle/''',
 ]

@@ -103,6 +103,7 @@ code {
 .button,
 .code-row dt,
 .fact h3,
+.install-for,
 .foot-links a,
 .skip {
   font-size: 12px;
@@ -455,6 +456,11 @@ dd {
 .fact p {
   margin: 0;
   color: var(--dim);
+}
+
+.install-for {
+  margin: 48px 0 0;
+  font-size: 13px;
 }
 
 .steps {

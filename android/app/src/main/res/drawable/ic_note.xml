@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keepsake's mark in one colour: the arrow and the five code blocks cut out of a square sleeve, so it is not taken for Android's own download arrow. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M2,2h20v20h-20zM10.8,3.36L13.2,3.36L13.2,11.97L16.3,8.86L18,10.56L13.2,15.36L10.8,15.36L6,10.56L7.7,8.86L10.8,11.97ZM3.84,17.76h2.86v2.16h-2.86z M7.1,17.76h2.86v2.16h-2.86z M10.37,17.76h2.86v2.16h-2.86zM13.63,17.76h2.86v2.16h-2.86z M16.9,17.76h2.86v2.16h-2.86z" />
+</vector>

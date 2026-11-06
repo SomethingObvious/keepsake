@@ -47,8 +47,9 @@ TEXT = frozenset(
         "",
     }
 )
-# Only this file and CONTRIBUTING.md, which lists them, may name a suppression.
-SUPPRESSION_ALLOWED = frozenset({"scripts/lint.py", "CONTRIBUTING.md"})
+# Only this file may name a suppression.
+# android/gradlew is Gradle's own wrapper script, which is regenerated rather than edited.
+SUPPRESSION_ALLOWED = frozenset({"scripts/lint.py", "android/gradlew"})
 SUPPRESSION = re.compile(
     r"noqa|type:\s*ignore|pyright:\s*(?:ignore|basic|strict)|mypy:\s*ignore|eslint-disable"
     r"|@ts-(?:ignore|expect-error|nocheck)|stylelint-disable|markdownlint-(?:disable|enable"
@@ -137,7 +138,7 @@ def program(name: str) -> str:
     """Return an installed program's full path, or stop with how to install it."""
     found = shutil.which(name)
     if not found:
-        message = f"{name} is missing: pip install -r requirements-dev.txt, or see CONTRIBUTING.md"
+        message = f"{name} is missing: pip install -r requirements-dev.txt"
         raise SystemExit(message)
     return found
 

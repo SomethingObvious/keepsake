@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Keepsake: Free Video, Audio and Gallery Downloader for Windows</title>
-    <meta name="description" content="A free, open-source downloader for Windows. Paste a link from YouTube or more than a thousand other sites and save the video, the song or a whole gallery.">
+    <title>Keepsake: Free Video and Gallery Downloader for Windows and Android</title>
+    <meta name="description" content="A free, open-source downloader for Windows and Android. Paste a link from YouTube or more than a thousand other sites and save the video, the song or a whole gallery.">
     <link rel="canonical" href="https://somethingobvious.github.io/keepsake/">
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#0a0a0a">
@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="site.css">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Keepsake">
-    <meta property="og:title" content="Keepsake: Free Video, Audio and Gallery Downloader for Windows">
+    <meta property="og:title" content="Keepsake: Free Video and Gallery Downloader for Windows and Android">
     <meta property="og:description" content="Paste a link from YouTube or more than a thousand other sites and save the video, the song or a whole gallery. Free and open source.">
     <meta property="og:url" content="https://somethingobvious.github.io/keepsake/">
     <meta property="og:image" content="https://somethingobvious.github.io/keepsake/og.jpg">
@@ -27,11 +27,11 @@
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
         "name": "Keepsake",
-        "description": "A free, open-source downloader for Windows that saves video, audio and whole galleries from YouTube and more than a thousand other sites, built on yt-dlp and gallery-dl.",
+        "description": "A free, open-source downloader for Windows and Android that saves video, audio and whole galleries from YouTube and more than a thousand other sites, built on yt-dlp and gallery-dl.",
         "url": "https://somethingobvious.github.io/keepsake/",
         "downloadUrl": "https://github.com/SomethingObvious/keepsake/releases/latest/download/KeepsakeSetup.exe",
         "applicationCategory": "MultimediaApplication",
-        "operatingSystem": "Windows 10, Windows 11",
+        "operatingSystem": "Windows 10, Windows 11, Android 11",
         "license": "https://opensource.org/license/mit",
         "isAccessibleForFree": true,
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
@@ -66,18 +66,22 @@
     <main id="main">
       <section class="hero wrap" aria-labelledby="title">
         <h1 id="title">Keep What You Find Online</h1>
-        <p class="lead">Keepsake is a free video, audio and gallery downloader for Windows. Paste a link from YouTube or more than a thousand other sites, and it saves the file to your Videos, Music or Pictures folder, ready to play.</p>
+        <p class="lead">Keepsake is a free video, audio and gallery downloader for Windows and Android. Paste a link from YouTube or more than a thousand other sites, and it saves the file to your Videos, Music or Pictures folder, ready to play.</p>
         <div class="actions">
           <a class="button primary" href="https://github.com/SomethingObvious/keepsake/releases/latest/download/KeepsakeSetup.exe">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>
             Download for Windows
+          </a>
+          <a class="button primary" href="https://github.com/SomethingObvious/keepsake/releases/latest/download/Keepsake.apk">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>
+            Download for Android
           </a>
           <a class="button ghost" href="https://github.com/SomethingObvious/keepsake">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5 11 13M17.5 14v4.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1H10"/></svg>
             Source on GitHub
           </a>
         </div>
-        <p class="fine">For Windows 10 and 11, 64-bit. Free and open source under the MIT licence.</p>
+        <p class="fine">For Windows 10 and 11, 64-bit, and 64-bit phones with Android 11 or newer. Free and open source under the MIT licence.</p>
         <svg class="signal" viewBox="0 0 1200 48" preserveAspectRatio="none" aria-hidden="true"><polyline pathLength="1" points="0,44 64,44 70,12 140,12 146,15 230,15 236,10 330,10 336,13 452,13 458,9 560,9 566,14 640,14 646,11 760,11 766,13 880,13 886,10 990,10 996,44 1200,44"/></svg>
         <figure class="shot">
           <img src="img/downloads.webp" srcset="img/downloads-960.webp 960w, img/downloads.webp 1600w" sizes="(width >= 1244px) 1180px, calc(100vw - 32px)" width="1600" height="1000" fetchpriority="high" alt="Keepsake's Downloads page with three Blender films downloading, each drawing its speed as a line, and four more waiting.">
@@ -176,6 +180,7 @@
 
       <section class="wrap section" id="install" aria-labelledby="install-title">
         <h2 id="install-title">Install</h2>
+        <h3 class="install-for">On Windows</h3>
         <ol class="steps">
           <li>
             <span class="step">1</span>
@@ -188,6 +193,21 @@
           <li>
             <span class="step">3</span>
             <p>On its first start Keepsake fetches FFmpeg and Deno, which takes under a minute. Then paste a link.</p>
+          </li>
+        </ol>
+        <h3 class="install-for">On Android</h3>
+        <ol class="steps">
+          <li>
+            <span class="step">1</span>
+            <p>On the phone, download <a href="https://github.com/SomethingObvious/keepsake/releases/latest/download/Keepsake.apk">Keepsake.apk</a> and tap it when it finishes.</p>
+          </li>
+          <li>
+            <span class="step">2</span>
+            <p>Android asks once whether your browser may install apps. Allow it and go back. Play Protect may offer to scan it first, since it is not from the Play Store.</p>
+          </li>
+          <li>
+            <span class="step">3</span>
+            <p>Open Keepsake and give it access to all files, which is how it saves to Movies, Music, Pictures and Documents. Then paste or share a link to it.</p>
           </li>
         </ol>
       </section>
@@ -221,7 +241,7 @@
           </div>
           <div class="qa">
             <dt>Does it run on a Mac or Linux?</dt>
-            <dd>No, Keepsake is made for Windows 10 and 11.</dd>
+            <dd>No, Keepsake is made for Windows 10 and 11, and for Android phones.</dd>
           </div>
         </dl>
       </section>

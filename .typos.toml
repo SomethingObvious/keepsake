@@ -4,6 +4,8 @@
 extend-exclude = ["package-lock.json", "*.ico", "*.onnx"]
 
 [default.extend-words]
+# The CA bundle package that the Android build installs with pip.
+certifi = "certifi"
 # yt-dlp's name for a Pixiv animation, and a flag of gallery-dl's.
 ugoira = "ugoira"
 Ugoira = "Ugoira"

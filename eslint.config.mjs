@@ -16,7 +16,8 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["node_modules/**", "build/**", "dist/**"] },
+  // android.js is a plain script that Gradle injects ahead of app.js, so it sits outside tsconfig.
+  { ignores: ["node_modules/**", "build/**", "dist/**", "android/**"] },
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
