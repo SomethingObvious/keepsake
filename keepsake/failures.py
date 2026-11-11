@@ -136,8 +136,8 @@ RULES: tuple[Rule, ...] = (
         unrecognised,
         (
             "Neither yt-dlp nor gallery-dl found anything to download there. Either the site "
-            "changed how it serves media, or the link has nothing on it. The nightly yt-dlp "
-            "(Repair, or Settings > Tools) often knows about a change first."
+            "changed how it serves media, or the link has nothing on it. Repair moves to the "
+            "nightly yt-dlp, which often knows about a change first."
         ),
     ),
     (
@@ -149,8 +149,8 @@ RULES: tuple[Rule, ...] = (
     (
         bot_check,
         (
-            "The site turned the request away. Repair clears yt-dlp's cache and tries again, "
-            "then tries the nightly yt-dlp; signing in (Settings > Sign-in) is the next step "
+            "The site turned the request away. Repair clears yt-dlp's cache, moves to the "
+            "nightly yt-dlp and tries again. Signing in (Settings > Sign-in) is the next step "
             "if that is not enough."
         ),
     ),

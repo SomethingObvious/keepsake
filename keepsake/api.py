@@ -295,19 +295,20 @@ class Api:
         process.run([paths.tool("shutdown"), "/a"])
 
     def repair(self, job_id: object) -> None:
-        """Try the fixes for a refused download: clear yt-dlp's cache, then the nightly yt-dlp."""
+        """Fix a failed download in one press: clear yt-dlp's cache, move to the nightly, retry."""
         app = self._app
         job = app.queue.get(as_text(job_id))
-        if not job:
+        if not job or not job.repairable:
             return
-        job.repairs += 1
+        job.repairable = False
+        job.stage = "Repairing"
+        job.log.append("--- repairing: clearing the cache and moving to the nightly yt-dlp")
+        app.queue.dirty = True
 
         def work() -> None:
-            if job.repairs == 1:
-                app.queue.clear_cache(job)
-            else:
-                app.updater.install("nightly", "")
-                app.save_settings({"ytdlp_channel": "nightly"})
+            app.queue.clear_cache(job)
+            app.updater.install("nightly", "")
+            app.save_settings({"ytdlp_channel": "nightly"})
             app.queue.retry(job.id)
 
         threading.Thread(target=work, daemon=True, name="repair").start()

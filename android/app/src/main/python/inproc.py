@@ -88,21 +88,26 @@ def install() -> None:
     """Put the routers in place of the standard streams, once."""
     if sys.stdout is not OUT:
         sys.stdout, sys.stderr = OUT, ERR
-        import yt_dlp
+        route_ytdlp()
 
-        original = yt_dlp.YoutubeDL.__init__
 
-        def init(self: Any, *args: Any, **kwargs: Any) -> None:
-            original(self, *args, **kwargs)
-            # Fragments download on helper threads, so the sinks go to the instance itself.
-            own = {id(OUT): OUT.target(), id(ERR): ERR.target()}
-            files = self._out_files
-            for name in ("out", "error", "screen", "console"):
-                stream = getattr(files, name, None)
-                if id(stream) in own:
-                    setattr(files, name, own[id(stream)])
+def route_ytdlp() -> None:
+    """Point each YoutubeDL at its own run's streams. Again after a newer yt-dlp is loaded."""
+    import yt_dlp
 
-        yt_dlp.YoutubeDL.__init__ = init
+    original = yt_dlp.YoutubeDL.__init__
+
+    def init(self: Any, *args: Any, **kwargs: Any) -> None:
+        original(self, *args, **kwargs)
+        # Fragments download on helper threads, so the sinks go to the instance itself.
+        own = {id(OUT): OUT.target(), id(ERR): ERR.target()}
+        files = self._out_files
+        for name in ("out", "error", "screen", "console"):
+            stream = getattr(files, name, None)
+            if id(stream) in own:
+                setattr(files, name, own[id(stream)])
+
+    yt_dlp.YoutubeDL.__init__ = init
 
 
 def handles(command: list[str]) -> bool:

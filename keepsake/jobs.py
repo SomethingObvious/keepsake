@@ -80,7 +80,6 @@ class Job:
     added: float = field(default_factory=time.time)
     attempts: int = 0
     retry_at: float = 0.0
-    repairs: int = 0
     # A subscription check keeps its own archive and asks to stop early.
     archive: str = ""
     ytdlp_extra: list[str] = field(default_factory=list)

@@ -73,6 +73,14 @@ def test_a_flaky_failure_is_retried_later_and_a_refusal_can_be_repaired(queue: Q
     assert refused.status == "failed"
     assert refused.repairable
     assert "turned the request away" in refused.advice
+    # Advice that names Repair always comes with the button.
+    vague = Job(url="https://x/3", mode="video", options=Options(), tool="yt-dlp")
+    queue.settle(vague, ok=False, message="ERROR: something nobody expected")
+    assert "Repair" in vague.advice
+    assert vague.repairable
+    gone = Job(url="https://x/4", mode="video", options=Options(), tool="yt-dlp")
+    queue.settle(gone, ok=False, message="ERROR: [youtube] a: Video unavailable")
+    assert not gone.repairable
 
 
 def test_a_stopped_job_is_paused_or_cancelled_not_failed(queue: Queue) -> None:

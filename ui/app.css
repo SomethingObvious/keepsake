@@ -753,6 +753,10 @@
     font-size: 11px;
   }
 
+  .btn.small.primary {
+    padding-right: 22px;
+  }
+
   /* A file path keeps its own case. */
   .btn.path {
     font-size: 12px;

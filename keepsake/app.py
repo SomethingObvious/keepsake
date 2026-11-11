@@ -19,7 +19,7 @@ from keepsake.jobs import Job
 from keepsake.links import extract_urls, kind, site_of
 from keepsake.options import BUILT_IN_PRESETS, MODES, Options, preset_values, with_preset
 from keepsake.subscriptions import Subscriptions
-from keepsake.updates import WEEK, Updater
+from keepsake.updates import DAY, Updater
 
 if TYPE_CHECKING:
     from http.cookies import SimpleCookie
@@ -149,7 +149,7 @@ class App:
         """Run the once-a-minute checks."""
         o = self.options
         running = any(job.status == "running" for job in self.queue.jobs.values())
-        if o.auto_update and not running and time.time() - o.last_update > WEEK:
+        if o.auto_update and not running and time.time() - o.last_update > DAY:
             self.options = Options.load({**self.options.dump(), "last_update": time.time()})
             store.save(paths.DATA / "settings.json", self.options.dump())
             self.updater.update_tools(o.ytdlp_channel)

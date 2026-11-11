@@ -539,7 +539,15 @@
           <div class="head">
             <h1>Settings</h1>
             <span class="sub">Saved as you change them</span>
+            <div class="right">
+              <div class="search">
+                <span data-i="search"></span>
+                <label class="visually-hidden" for="settings-q">Search settings</label>
+                <input type="text" name="settings-q" autocomplete="off" class="field" id="settings-q" placeholder="Search settings…" spellcheck="false">
+              </div>
+            </div>
           </div>
+          <p class="hint" id="settings-none" role="status" hidden></p>
           <div class="jump" id="settings-index" role="group" aria-label="Sections"></div>
 
           <section class="sheet">
@@ -661,12 +669,13 @@
 
           <section class="sheet">
             <h2>Tools and updates</h2>
+            <div class="setting"><div><div class="l">Installed</div><div class="h" id="tools-installed"></div></div></div>
             <div class="setting"><div><div class="l">yt-dlp channel</div><div class="h">Nightly gets site fixes days before stable, which matters on the days YouTube changes something.</div></div>
               <div class="c"><label class="visually-hidden" for="channel">Channel</label><select class="field" id="channel" data-set="ytdlp_channel"><option value="stable">Stable</option><option value="nightly">Nightly</option></select><button type="button" class="btn" id="update-now"><span data-i="refresh"></span>Update now</button></div></div>
             <div class="setting"><div><div class="l">Go back to an earlier yt-dlp</div><div class="h">For the rare update that breaks something</div></div>
               <div class="c"><label class="visually-hidden" for="rollback">Version</label><select class="field" id="rollback"></select><button type="button" class="btn" id="rollback-go">Install</button></div></div>
-            <div class="setting"><div><div class="l">Update yt-dlp and gallery-dl weekly</div></div>
-              <div class="c"><input type="checkbox" class="switch" data-set="auto_update" aria-label="Weekly updates"></div></div>
+            <div class="setting"><div><div class="l">Update yt-dlp and gallery-dl by themselves</div><div class="h">Once a day, while nothing is downloading</div></div>
+              <div class="c"><input type="checkbox" class="switch" data-set="auto_update" aria-label="Update yt-dlp and gallery-dl by themselves"></div></div>
             <div class="setting"><div><div class="l">yt-dlp plugins</div><div class="h">Anything in this folder is loaded, such as a PO token provider</div></div>
               <div class="c"><button type="button" class="btn" data-open="plugins"><span data-i="folder"></span>Open plugins folder</button></div></div>
             <div class="setting" id="text-removal"><div><div class="l">Remove text</div><div class="h" id="detext-about"></div>

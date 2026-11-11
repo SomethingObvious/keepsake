@@ -392,9 +392,8 @@ class Queue:
             job.status, job.stage = "failed", ""
             job.error, job.said = message, failures.plainly(message)
             job.advice = failures.advice(message)
-            job.repairable = job.tool == "yt-dlp" and (
-                failures.bot_check(message) or failures.unrecognised(message)
-            )
+            # Whenever the advice says to press Repair, there is a Repair to press.
+            job.repairable = "Repair" in job.advice
         if job.status in ("done", "cancelled"):
             shutil.rmtree(working_folder(job), ignore_errors=True)
         if job.status != "paused" and job.job_kind == "download" and not job.repeat:

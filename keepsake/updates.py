@@ -1,6 +1,6 @@
 """Keeping the tools current, and Keepsake itself.
 
-The tools update weekly by themselves, on the stable or the nightly channel,
+The tools update daily by themselves, on the stable or the nightly channel,
 and can be rolled back to any version they have been. Keepsake follows main:
 pre-push lets through only one squashed commit at a time, with a raised
 version and the whole lint and test suite passing, so each commit there is a
@@ -23,7 +23,7 @@ from keepsake.commands import GALLERY, YTDLP
 PACKAGE = "yt-dlp[default,curl-cffi]"
 UPSTREAM = "origin/main"
 SIX_HOURS = 6 * 3600
-WEEK = 7 * 86400
+DAY = 86400
 
 
 def version_tuple(text: str) -> tuple[int, int, int] | None:

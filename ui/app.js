@@ -2104,6 +2104,9 @@ function stateText(j) {
   if (j.status === "queued" && j.retry_at * 1000 > Date.now()) {
     return `Retrying in ${dur(j.retry_at - Date.now() / 1000)}`;
   }
+  if (j.status === "failed" && j.stage) {
+    return j.stage;
+  }
   if (j.status === "done" && j.repeat) {
     return "Already downloaded";
   }
@@ -2170,7 +2173,7 @@ function actions(j) {
     case "paused":
       return actButton("retry", "play", "Resume", "accent") + actButton("remove", "x", "Remove", "warn") + log;
     case "failed":
-      return `${j.repairable ? '<button type="button" class="btn small" data-act="repair">Repair</button>' : ""}<button type="button" class="btn small" data-act="retry">Try Again</button>${
+      return `${j.repairable ? '<button type="button" class="btn small primary" data-act="repair" title="Clears the yt-dlp cache, moves to the nightly yt-dlp and tries again">Repair</button>' : ""}<button type="button" class="btn small" data-act="retry">Try Again</button>${
         actButton("copy", "copy", "Copy link")}${log}${actButton("remove", "x", "Remove", "warn")}`;
     case "cancelled":
       return actButton("retry", "refresh", "Start again") + actButton("remove", "x", "Remove", "warn");
@@ -2486,6 +2489,8 @@ function renderTools(state) {
   button.disabled = state.updating;
   button.innerHTML = state.updating ? '<span class="spinner"></span>Updating…' : `${icon("refresh")}Update tools`;
   $("#note").textContent = state.note;
+  // A phone has no rail, so Settings says what is installed too.
+  $("#tools-installed").textContent = [`yt-dlp ${t["yt-dlp"] ?? "…"}, gallery-dl ${t["gallery-dl"] ?? "…"}`, state.updating ? "Updating…" : state.note].filter(Boolean).join(". ");
   const app = state.app;
   $("#app-ready").hidden = app.state !== "ready";
   $("#app-restart-2").hidden = app.state !== "ready";
@@ -2511,6 +2516,118 @@ function renderTools(state) {
   }
   /** @type {HTMLButtonElement} */ ($("#rollback-go")).disabled = !seen.length;
   $("#nav-subs").textContent = state.subs.length ? String(state.subs.length) : "";
+}
+
+// The words people reach for that the settings themselves never use. Each entry is a
+// phrase, and every word of it has to be in the setting.
+/** @type {Record<string, string[]>} */
+const SETTING_WORDS = {
+  login: ["sign in"], log: ["sign in"], account: ["sign in"], password: ["sign in"], cookie: ["sign in", "cookies"], private: ["sign in"], age: ["sign in"],
+  folder: ["saving"], location: ["saving"], directory: ["saving"], path: ["saving"], where: ["saving"], save: ["saving"], store: ["saving"],
+  mp3: ["music"], audio: ["music"], song: ["music"], photo: ["pictures"], image: ["pictures"], subtitle: ["transcripts"], caption: ["transcripts"],
+  filename: ["file names"], rename: ["file names"], title: ["file names"],
+  auto: ["by themselves", "automatic"], automatic: ["by themselves"], update: ["updates"], upgrade: ["updates"], version: ["updates"],
+  broken: ["nightly", "earlier yt-dlp"], fix: ["nightly"], error: ["nightly", "retry"], repair: ["nightly"],
+  ytdlp: ["yt-dlp"], youtube: ["yt-dlp", "sign in"],
+  vpn: ["proxy"], slow: ["speed limit", "pace"], bandwidth: ["speed limit"], throttle: ["speed limit", "pace"], limit: ["speed limit"], blocked: ["pace", "pretend browser", "proxy"], ban: ["pace"],
+  parallel: ["at once", "fragments"], simultaneous: ["at once"], schedule: ["download hours"], night: ["download hours"], disk: ["free space"], storage: ["free space"],
+  minimise: ["tray"], minimize: ["tray"], startup: ["start with windows"], boot: ["start with windows"], background: ["tray", "out of sight"],
+  alert: ["notifications"], ding: ["sound"], keyboard: ["shortcuts"], hotkey: ["ctrl"], bookmark: ["bookmarks"],
+  backup: ["export"], restore: ["import"], plugin: ["plugins"], cloudflare: ["pretend browser"],
+};
+
+const FILLER = new Set(["a", "an", "the", "to", "of", "do", "does", "i", "my", "me", "how", "is", "it", "in", "on", "for", "and", "can", "what", "change", "set", "setting", "settings"]);
+
+/** @param {string} a @param {string} b */
+function nearly(a, b) {
+  // One slip (a wrong, missing or extra letter) still finds a word of four letters or more.
+  if (a.length < 4 || Math.abs(a.length - b.length) > 1) {
+    return false;
+  }
+  let i = 0;
+  while (i < a.length && a[i] === b[i]) {
+    i++;
+  }
+  const tail = (/** @type {number} */ x, /** @type {number} */ y) => a.slice(i + x) === b.slice(i + y);
+  return tail(1, 1) || tail(1, 0) || tail(0, 1);
+}
+
+/** @param {string} text */
+function wordsOf(text) {
+  return text.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").split(/[^a-z0-9-]+/).flatMap((w) => (w.includes("-") ? [w, ...w.split("-")] : [w])).filter(Boolean);
+}
+
+/**
+ * Whether one typed word is in the setting: as the start of a word, misspelt by a letter, or as a phrase that means the same.
+ * @param {string} t
+ * @param {string[]} words
+ */
+function wordMatches(t, words) {
+  // A slip inside the start of a longer word only counts for six letters or more, or "sign" would find "sight".
+  const has = (/** @type {string} */ way) =>
+    words.some((w) => w.startsWith(way) || nearly(way, w) || (way.length >= 6 && (nearly(way, w.slice(0, way.length)) || nearly(way, w.slice(0, way.length + 1)))));
+  const stem = t.replace(/s$/, "");
+  const phrases = [...(SETTING_WORDS[t] ?? []), ...(SETTING_WORDS[stem] ?? [])];
+  return has(t) || has(stem) || phrases.some((phrase) => wordsOf(phrase).every(has));
+}
+
+/**
+ * @param {string[]} typed
+ * @param {string[]} words
+ */
+function settingMatches(typed, words) {
+  return typed.every((t) => wordMatches(t, words));
+}
+
+/** Filters the settings page to the rows that match what is typed. */
+function bindSettingsSearch() {
+  const page = $("#settings");
+  const box = /** @type {HTMLInputElement} */ ($("#settings-q"));
+  const none = $("#settings-none");
+  const index = $("#settings-index");
+  const sheets = $$(".sheet", page);
+  /** @param {Element} el */
+  const textOf = (el) => {
+    // textContent runs neighbouring elements together ("channelNightly"), so each piece of text is kept apart.
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const parts = [];
+    while (walk.nextNode()) {
+      parts.push(walk.currentNode.nodeValue ?? "");
+    }
+    return parts.join(" ");
+  };
+  /** @param {Element} el */
+  const said = (el) =>
+    [textOf(el), ...$$("[aria-label], [title], [placeholder]", el).map((x) => `${x.getAttribute("aria-label") ?? ""} ${x.getAttribute("title") ?? ""} ${x.getAttribute("placeholder") ?? ""}`)].join(" ");
+  const rows = sheets.map((sheet) => ({ sheet, head: wordsOf($("h2", sheet).textContent), rows: $$(".setting", sheet).map((row) => ({ row, words: wordsOf(said(row)) })) }));
+  const filter = () => {
+    const typed = wordsOf(box.value).filter((w) => !FILLER.has(w));
+    let found = 0;
+    for (const { sheet, head, rows: list } of rows) {
+      const whole = typed.length > 0 && settingMatches(typed, head);
+      let shown = 0;
+      for (const { row, words } of list) {
+        row.hidden = typed.length > 0 && !whole && !settingMatches(typed, [...head, ...words]);
+        shown += row.hidden ? 0 : 1;
+      }
+      sheet.hidden = shown === 0;
+      found += shown && getComputedStyle(sheet).display !== "none" ? shown : 0;
+    }
+    index.hidden = typed.length > 0;
+    none.hidden = !typed.length || found > 0;
+    none.textContent = `No setting matches “${box.value.trim()}”.`;
+  };
+  on(box, "input", filter);
+  on(box, "keydown", (event) => {
+    if (event.key === "Escape" && box.value) {
+      event.stopPropagation();
+      box.value = "";
+      filter();
+    } else if (event.key === "Enter") {
+      const first = $$(".setting:not([hidden]) :is(input, select, button)", page).find((el) => el !== box && /** @type {HTMLElement} */ (el).offsetParent);
+      /** @type {HTMLElement | undefined} */ (first)?.focus();
+    }
+  });
 }
 
 /** Builds the jump list over the settings page and keeps the section in view marked. */
@@ -5800,6 +5917,7 @@ bindViewer();
 bindHistory();
 bindSettingsExtras();
 bindSettingsIndex();
+bindSettingsSearch();
 bindDrawerFolds();
 bindTextRemoval();
 bindWindow();

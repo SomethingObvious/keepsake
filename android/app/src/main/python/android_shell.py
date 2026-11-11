@@ -270,7 +270,7 @@ def fetch_tool(url: str, target: Path, inside: str) -> None:
 
 
 def install(updater: Any, channel: str, pin: str) -> None:
-    """Keepsake's weekly update, done without pip: yt-dlp's own zip build and gallery-dl's wheel.
+    """Keepsake's daily update, done without pip: yt-dlp's own zip build and gallery-dl's wheel.
 
     A phone app cannot pip install into itself, but Python imports straight from
     both, so the next start puts them ahead of the copies built into the app.
@@ -290,14 +290,49 @@ def install(updater: Any, channel: str, pin: str) -> None:
             gallery = json.load(reply)
         wheel = next(u["url"] for u in gallery["urls"] if u["packagetype"] == "bdist_wheel")
         fetch_tool(wheel, folder / "gallery-dl.whl", "gallery_dl/__init__.py")
-        updater.note = (
-            f"Got yt-dlp {release['tag_name']} and gallery-dl {gallery['info']['version']}. "
-            "They take over the next time Keepsake starts."
-        )
+        got = f"Got yt-dlp {release['tag_name']} and gallery-dl {gallery['info']['version']}."
+        if take_over(updater):
+            updater.note = got
+        else:
+            updater.note = f"{got} They take over once nothing is downloading, or at the next start."
     except (OSError, ValueError, KeyError, StopIteration) as problem:
         updater.note = f"Update failed: {problem}"
     finally:
         updater.busy = False
+
+
+def take_over(updater: Any) -> bool:
+    """Swap the downloaded tools in for the loaded ones, unless a run is still using them.
+
+    Repair retries straight after updating, and it has to retry on the new yt-dlp.
+    """
+    import importlib
+    import zipimport
+
+    import inproc
+
+    if inproc.RUNS:
+        return False
+    for name in ("yt-dlp.zip", "gallery-dl.whl"):
+        path = str(updated_tools() / name)
+        if path in sys.path:
+            sys.path.remove(path)
+        sys.path.insert(0, path)
+        sys.path_importer_cache.pop(path, None)
+    # zipimport keeps each zip's file table in memory, and a fresh zip at the same path needs it dropped.
+    zipimport._zip_directory_cache.clear()
+    importlib.invalidate_caches()
+    for module in list(sys.modules):
+        if module.split(".")[0] in ("yt_dlp", "gallery_dl"):
+            del sys.modules[module]
+    inproc.route_ytdlp()
+    import yt_dlp
+
+    from keepsake import probe
+
+    probe.yt_dlp = yt_dlp
+    updater.probe()
+    return True
 
 
 def serialise(value: Any) -> Any:
