@@ -290,11 +290,8 @@ def install(updater: Any, channel: str, pin: str) -> None:
             gallery = json.load(reply)
         wheel = next(u["url"] for u in gallery["urls"] if u["packagetype"] == "bdist_wheel")
         fetch_tool(wheel, folder / "gallery-dl.whl", "gallery_dl/__init__.py")
-        got = f"Got yt-dlp {release['tag_name']} and gallery-dl {gallery['info']['version']}."
-        if take_over(updater):
-            updater.note = got
-        else:
-            updater.note = f"{got} They take over once nothing is downloading, or at the next start."
+        got = f"Updated to yt-dlp {release['tag_name']} and gallery-dl {gallery['info']['version']}"
+        updater.note = got if take_over(updater) else f"{got}. Restart Keepsake to use them."
     except (OSError, ValueError, KeyError, StopIteration) as problem:
         updater.note = f"Update failed: {problem}"
     finally:
@@ -322,8 +319,11 @@ def take_over(updater: Any) -> bool:
     # zipimport keeps each zip's file table in memory, and a fresh zip at the same path needs it dropped.
     zipimport._zip_directory_cache.clear()
     importlib.invalidate_caches()
+    # yt-dlp patches urllib3 and requests as it loads, and a second patch on top of
+    # the first broke every request ("'Urllib3PercentREOverride' object has no
+    # attribute 'sub'"), so they load fresh along with it.
     for module in list(sys.modules):
-        if module.split(".")[0] in ("yt_dlp", "gallery_dl"):
+        if module.split(".")[0] in ("yt_dlp", "gallery_dl", "requests", "urllib3"):
             del sys.modules[module]
     inproc.route_ytdlp()
     import yt_dlp

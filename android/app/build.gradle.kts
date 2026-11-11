@@ -55,8 +55,8 @@ android {
         applicationId = "com.somethingobvious.keepsake"
         minSdk = 30
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.6.0"
+        versionCode = 19
+        versionName = "1.6.1"
         ndk {
             // Chaquopy's Python 3.13 and the FFmpeg build are 64-bit ARM only.
             abiFilters += listOf("arm64-v8a")

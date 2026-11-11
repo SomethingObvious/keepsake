@@ -560,9 +560,9 @@
               <div class="c"><button type="button" class="btn" data-pick="picture_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="pictures">Open</button></div></div>
             <div class="setting"><div><div class="l">Transcripts</div><div class="h" data-folder-show="text_folder"></div></div>
               <div class="c"><button type="button" class="btn" data-pick="text_folder"><span data-i="folder"></span>Choose</button><button type="button" class="btn ghost" data-open="documents">Open</button></div></div>
-            <div class="setting roomy"><div><div class="l">All in one place</div><div class="h">Send every kind of download to a Keepsake folder in Downloads, or back to the four folders above</div></div>
+            <div class="setting roomy"><div><div class="l">All in one place</div><div class="h">Put everything in one Keepsake folder in Downloads, or use the four folders above</div></div>
               <div class="c"><div class="seg" role="group" aria-label="Where downloads go"><button type="button" data-folders="downloads" aria-pressed="false">Downloads</button><button type="button" data-folders="own" aria-pressed="false">Windows' Folders</button></div></div></div>
-            <div class="setting"><div><div class="l">Sort into folders by site</div><div class="h">Off: videos sit loose and each gallery gets one folder, named from its link. On: a folder per site, and gallery-dl's own folders by account.</div></div>
+            <div class="setting"><div><div class="l">Sort into folders by site</div><div class="h">Gives each site its own folder, with a folder per account for galleries</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="by_site" aria-label="Sort into folders by site"></div></div>
             <div class="setting"><div><div class="l">File names</div><div class="h">How each download is named. Custom takes a yt-dlp output template.</div></div>
               <div class="c">
@@ -587,7 +587,7 @@
 
           <section class="sheet">
             <h2>Sign-in</h2>
-            <div class="setting"><div><div class="l">Sign in to a site from Keepsake</div><div class="h">Opens the site in its own window. Sign in as usual and close it: downloads from that site then use the session. This works where borrowing Chrome's or Edge's cookies does not.</div></div>
+            <div class="setting"><div><div class="l">Sign in to a site from Keepsake</div><div class="h">Sign in to the site in the window that opens, then close it. Downloads from that site will use your sign-in.</div></div>
               <div class="c">
                 <label class="visually-hidden" for="signin-site">Site</label>
                 <input type="text" name="signin-site" autocomplete="off" class="field" id="signin-site" placeholder="e.g. youtube.com" spellcheck="false">
@@ -595,7 +595,7 @@
               </div></div>
             <div class="setting wide"><div class="c chips" id="signin-quick"></div></div>
             <div class="setting wide" id="accounts-row"><div class="accounts" id="accounts"></div></div>
-            <div class="setting"><div><div class="l">Otherwise</div><div class="h">Automatic uses a Keepsake sign-in for that site, then tries each browser, but only when a site asks.</div></div>
+            <div class="setting"><div><div class="l">Otherwise</div><div class="h">Where to get a sign-in when a site asks for one</div></div>
               <div class="c"><label class="visually-hidden" for="cookies">Cookies</label><select class="field" id="cookies" data-set="cookies"></select></div></div>
             <div class="setting" id="cookie-file-row"><div><div class="l">cookies.txt</div><div class="h" id="cookie-file-show">None chosen</div></div>
               <div class="c"><button type="button" class="btn" id="pick-cookies"><span data-i="file"></span>Choose file</button></div></div>
@@ -603,7 +603,7 @@
 
           <section class="sheet" data-desktop>
             <h2>Browser</h2>
-            <div class="setting"><div><div class="l">Send pages to Keepsake</div><div class="h">Drag these to the bookmarks bar. Clicking one on a page downloads it; the browser asks once whether to open Keepsake.</div></div>
+            <div class="setting"><div><div class="l">Send pages to Keepsake</div><div class="h">Drag these to the bookmarks bar, then click one on any page to download it</div></div>
               <div class="c"><a class="bookmarklet" id="bm-video" href="#">Keepsake</a><a class="bookmarklet" id="bm-audio" href="#">Keepsake audio</a></div></div>
             <div class="setting"><div><div class="l">Download the copied link with <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></div><div class="h">Works in any program, even with Keepsake in the tray</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="hotkey" aria-label="Global hotkey"></div></div>
@@ -619,7 +619,7 @@
               <div class="c"><label class="visually-hidden" for="hours-from">From</label><input type="text" name="hours_from" autocomplete="off" class="field mono narrow" id="hours-from" data-set="hours_from" placeholder="e.g. 01:00"><span class="dim">to</span><label class="visually-hidden" for="hours-to">To</label><input type="text" name="hours_to" autocomplete="off" class="field mono narrow" id="hours-to" data-set="hours_to" placeholder="e.g. 07:00"></div></div>
             <div class="setting"><div><div class="l">Speed limit</div><div class="h">Per download, e.g. 5M or 800K. Empty for none.</div></div>
               <div class="c"><label class="visually-hidden" for="rate">Speed limit</label><input type="text" name="rate" autocomplete="off" class="field mono narrow" id="rate" data-set="rate" placeholder="e.g. 5M"></div></div>
-            <div class="setting"><div><div class="l">Pace</div><div class="h">Pauses between requests keep a site from rate-limiting you. Careful is slow but survives long channels.</div></div>
+            <div class="setting"><div><div class="l">Pace</div><div class="h">Slower is less likely to get blocked. Use Careful for long channels.</div></div>
               <div class="c"><label class="visually-hidden" for="politeness">Pace</label><select class="field" id="politeness" data-set="politeness"><option value="off">As fast as possible</option><option value="normal">Normal</option><option value="careful">Careful</option></select></div></div>
             <div class="setting"><div><div class="l">Retry flaky failures by themselves</div><div class="h">After 30 seconds, 2 minutes and 10 minutes, for dropped connections and rate limits</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="auto_retry" aria-label="Retry by themselves"></div></div>
@@ -663,14 +663,14 @@
               <div class="c"><input type="checkbox" class="switch" data-set="media_controls" aria-label="Player in the notification bar"></div></div>
             <div class="setting"><div><div class="l">A sound when a download finishes</div></div>
               <div class="c"><input type="checkbox" class="switch" data-set="sound" aria-label="Sound"></div></div>
-            <div class="setting"><div><div class="l">Preview playback</div><div class="h">How big a video a link's preview plays. A slow computer plays a smaller one smoothly, or the sound alone. The clip bar works with any of them, even off.</div></div>
+            <div class="setting"><div><div class="l">Preview playback</div><div class="h">Video size in link previews. Pick a smaller one if previews stutter.</div></div>
               <div class="c"><label class="visually-hidden" for="preview-playback">Preview playback</label><select class="field" id="preview-playback" data-set="preview_playback"><option value="360">360p</option><option value="240">240p</option><option value="144">144p</option><option value="sound">Sound only</option><option value="off">Off</option></select></div></div>
           </section>
 
           <section class="sheet">
             <h2>Tools and updates</h2>
             <div class="setting"><div><div class="l">Installed</div><div class="h" id="tools-installed"></div></div></div>
-            <div class="setting"><div><div class="l">yt-dlp channel</div><div class="h">Nightly gets site fixes days before stable, which matters on the days YouTube changes something.</div></div>
+            <div class="setting"><div><div class="l">yt-dlp channel</div><div class="h">Nightly gets site fixes days before Stable</div></div>
               <div class="c"><label class="visually-hidden" for="channel">Channel</label><select class="field" id="channel" data-set="ytdlp_channel"><option value="stable">Stable</option><option value="nightly">Nightly</option></select><button type="button" class="btn" id="update-now"><span data-i="refresh"></span>Update now</button></div></div>
             <div class="setting"><div><div class="l">Go back to an earlier yt-dlp</div><div class="h">For the rare update that breaks something</div></div>
               <div class="c"><label class="visually-hidden" for="rollback">Version</label><select class="field" id="rollback"></select><button type="button" class="btn" id="rollback-go">Install</button></div></div>
@@ -697,7 +697,7 @@
 
           <section class="sheet">
             <h2>Archives</h2>
-            <div class="setting wide"><div class="h">What each archive remembers is never downloaded again. Forget entries here to fetch them once more.</div></div>
+            <div class="setting wide"><div class="h">Anything in an archive won't download again. Forget it here to download it again.</div></div>
             <div class="setting wide"><div class="archives" id="archives"></div></div>
             <div class="archive-view" id="archive-view" hidden>
               <div class="toolbar">

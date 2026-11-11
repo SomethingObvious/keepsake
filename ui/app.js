@@ -1567,7 +1567,7 @@ async function preview(given, clip = false) {
 function handClip() {
   const bar = S.preview?.clip?.bar;
   if (!bar) {
-    toast("There is no single video here to clip, so this is a plain preview");
+    toast("No single video here to clip");
     return;
   }
   bar.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -1942,7 +1942,7 @@ async function previewAction(act) {
   }
   if (act === "open-folder" && probe && !failed(probe) && probe.kind !== "gallery") {
     if (!(await api().open_directory(p.folder || probe.folder))) {
-      toast("That folder is not there any more");
+      toast("That folder is gone");
     }
     return;
   }
@@ -2173,7 +2173,7 @@ function actions(j) {
     case "paused":
       return actButton("retry", "play", "Resume", "accent") + actButton("remove", "x", "Remove", "warn") + log;
     case "failed":
-      return `${j.repairable ? '<button type="button" class="btn small primary" data-act="repair" title="Clears the yt-dlp cache, moves to the nightly yt-dlp and tries again">Repair</button>' : ""}<button type="button" class="btn small" data-act="retry">Try Again</button>${
+      return `${j.repairable ? '<button type="button" class="btn small primary" data-act="repair" title="Clear the cache, get the newest yt-dlp and try again">Repair</button>' : ""}<button type="button" class="btn small" data-act="retry">Try Again</button>${
         actButton("copy", "copy", "Copy link")}${log}${actButton("remove", "x", "Remove", "warn")}`;
     case "cancelled":
       return actButton("retry", "refresh", "Start again") + actButton("remove", "x", "Remove", "warn");
@@ -2226,8 +2226,7 @@ function card(j) {
   if (j.status === "failed") {
     why.innerHTML = `<b>${esc(j.advice)}</b>${j.said ? `<span class="said">The site said: ${esc(j.said)}</span>` : ""}`;
   } else if (partial) {
-    const what = j.errors === 1 ? "One of them" : `${String(j.errors)} of them`;
-    why.innerHTML = `<b>${what} did not download, and what did arrive is kept.</b><span class="said">${j.said ? `The site said: ${esc(j.said)}` : "The log says which."}</span>`;
+    why.innerHTML = `<b>The rest are saved.</b><span class="said">${j.said ? `The site said: ${esc(j.said)}` : "Details are in the log."}</span>`;
   }
   const key = j.status + String(j.repairable) + String(partial);
   if (el.status !== key) {
@@ -2392,7 +2391,7 @@ async function jobAction(act, j) {
       return;
     case "repair":
       await api().repair(j.id);
-      toast("Trying the fixes");
+      toast("Repairing");
       return;
     default:
       await api().act(act, [j.id]);
@@ -2615,7 +2614,7 @@ function bindSettingsSearch() {
     }
     index.hidden = typed.length > 0;
     none.hidden = !typed.length || found > 0;
-    none.textContent = `No setting matches “${box.value.trim()}”.`;
+    none.textContent = `No settings match “${box.value.trim()}”`;
   };
   on(box, "input", filter);
   on(box, "keydown", (event) => {
@@ -2966,9 +2965,9 @@ function bindSubs() {
       await api().update_subscription(S.editingSub, { name: form.name, url: form.url, mode: form.mode, every: form.every, start: form.start, overrides: form.overrides });
       toast("Saved");
     } else if (await api().add_subscription(form)) {
-      toast("Subscribed: looking now");
+      toast("Subscribed. Checking now");
     } else {
-      toast("That link does not look right");
+      toast("That isn't a valid link");
       return;
     }
     $("#sub-form").hidden = true;
@@ -3002,7 +3001,7 @@ function bindSubs() {
           return;
         }
         await api().remove_subscription(id);
-        toast("No longer watching. Files already fetched stay put.");
+        toast("Unsubscribed. Your files are kept");
         break;
       default:
         return;
@@ -3495,7 +3494,7 @@ async function deleteList(button, p) {
   S.lists = await api().delete_playlist(p.id);
   S.listOpen = "";
   renderLists();
-  toast(`Deleted ${p.name}. Its files are still in the library`);
+  toast(`Deleted ${p.name}. Its files are kept`);
 }
 
 /** Puts the open playlist in the order its rows are in now. */
@@ -3531,7 +3530,7 @@ async function addToList(paths) {
   const known = filesByPath();
   const playable = paths.filter((path) => known.get(path)?.kind !== "image");
   if (!playable.length) {
-    toast("Pictures do not go in playlists, only videos and sounds");
+    toast("Playlists hold videos and sounds, not pictures");
     return;
   }
   const dialog = /** @type {HTMLDialogElement} */ ($("#pick-list"));
@@ -3673,7 +3672,7 @@ function playFiles(files, name, id, first, shuffle) {
   const playable = files.filter((f) => f.kind !== "image");
   const start = first && playable.includes(first) ? first : playable[shuffle ? Math.floor(Math.random() * playable.length) : 0];
   if (!start) {
-    toast("There is nothing here to play. Pictures do not play");
+    toast("Nothing here to play");
     return;
   }
   leavePlayer();
@@ -3754,7 +3753,7 @@ function fallAsleep() {
       pauseNow(media);
       media.volume = loud;
       deck.fading = false;
-      toast("The sleep timer stopped it");
+      toast("Sleep timer ended");
     }
   }, 200);
 }
@@ -4638,7 +4637,7 @@ function setupPlayer(f) {
     if (deck.sleep < 0) {
       Object.assign(deck, { sleep: 0, wanted: false });
       paintControls();
-      toast("The sleep timer stopped it at the end");
+      toast("Sleep timer ended");
     } else if (!deck.next || !playNext(deck.around)) {
       deck.wanted = false;
     }
@@ -4819,7 +4818,7 @@ function toggleLoop(media) {
 /** @param {HTMLMediaElement} media */
 function cycleSubtitles(media) {
   if (!deck.tracks.length) {
-    toast("No subtitles for this one");
+    toast("No subtitles");
     return;
   }
   deck.track = deck.track + 1 >= deck.tracks.length ? -1 : deck.track + 1;
@@ -4874,9 +4873,9 @@ function paintCaptions() {
 async function revealFile(path) {
   const how = await api().reveal(path);
   if (how === "folder") {
-    toast("That file is not there any more, so this is the folder it was in");
+    toast("That file is gone, so here's its folder");
   } else if (how === "gone") {
-    toast("That file and its folder are not there any more");
+    toast("That file and its folder are gone");
   }
 }
 
@@ -4884,7 +4883,7 @@ async function revealFile(path) {
 async function saveFrame(f, media) {
   const made = await api().save_frame(f.path, media.currentTime);
   if (!made) {
-    toast("Could not save that frame");
+    toast("Couldn't save that frame");
     return;
   }
   toast(`Saved ${made.split("\\").pop() ?? made}`, { label: "Show in Folder", run: () => revealFile(made) });
@@ -5145,7 +5144,7 @@ async function deleteCurrent() {
       closeBox();
     }
   } else {
-    toast("Could not delete that");
+    toast("Couldn't delete that");
     paintBox();
   }
 }
@@ -5213,7 +5212,7 @@ async function convertWith(button) {
   }
   const how = button.dataset["convert"] ?? "";
   if ((how === "trim" || how === "exact") && !marked()) {
-    toast("Choose the part to keep first: drag across the clip bar, or use Mark Start and Mark End as it plays");
+    toast("Mark a clip first by dragging across the clip bar");
     viewerClip?.ask();
     return;
   }
@@ -5246,7 +5245,7 @@ async function startSaving(button, f, how, start = 0, end = 0) {
   const id = await api().convert(f.path, how, start, end);
   button.disabled = false;
   if (!id) {
-    toast("That cannot be converted");
+    toast("Can't convert that file");
     return;
   }
   saving.push({ id, path: f.path, button, seen: false });
@@ -5472,7 +5471,7 @@ async function signIn(site) {
   if (await api().sign_in(site)) {
     toast(`Sign in to ${site}, then close that window`);
   } else {
-    toast("That does not look like a site");
+    toast("Enter a site, like youtube.com");
   }
 }
 
@@ -5517,7 +5516,7 @@ function bindSettingsExtras() {
   on($("#archive-forget"), "click", async () => {
     const lines = $$("#archive-entries input:checked").map((el) => el.dataset["line"] ?? "");
     const removed = await api().archive_forget(archiveView.name, lines);
-    toast(`Forgot ${String(removed)}: they will download again`);
+    toast(`Forgot ${String(removed)}. They'll download again`);
     archiveView.lines = await api().archive_entries(archiveView.name);
     renderArchiveEntries();
     renderArchives(await api().archives());

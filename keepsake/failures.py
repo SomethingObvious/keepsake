@@ -96,63 +96,35 @@ def any_of(*needles: str) -> Callable[[str], bool]:
 RULES: tuple[Rule, ...] = (
     (
         any_of(*SEALED),
-        (
-            "Chrome and the browsers built on it seal their cookies to themselves (since "
-            "Chrome 127), so nothing else can read them. Sign in to the site from Keepsake "
-            "instead (Settings > Sign-in), or choose Firefox there."
-        ),
+        "Chrome locks its cookies away from other apps. Sign in under Settings > Sign-in instead.",
     ),
-    (any_of(*LOCKED), "A browser is holding its cookie store open. Close it completely and retry."),
+    (any_of(*LOCKED), "The browser has its cookies open. Close it fully and try again."),
     (
         needs_sign_in,
-        (
-            "That page only shows this to someone signed in. Sign in to the site from Keepsake "
-            "(Settings > Sign-in) and try again; it takes a minute and works where borrowing a "
-            "browser's cookies does not."
-        ),
+        "You need to be signed in for this. Sign in under Settings > Sign-in and try again.",
     ),
     (
         any_of("private", "only available to", "members-only", "subscriber"),
-        (
-            "That is private, or kept for certain accounts. Signing in only helps if your "
-            "account can already see it."
-        ),
+        "It's private or for members only. Signing in helps only if your account can see it.",
     ),
     (
         any_of("429", "rate-limit", "rate limit", "too many requests"),
-        (
-            "The site is asking this machine to slow down. Keepsake retries by itself after a "
-            "pause; Settings > Network has a more careful pace if it keeps happening."
-        ),
+        "The site wants a slower pace. Keepsake will try again shortly.",
     ),
     (
         any_of("geo", "not available in your country", "blocked in"),
-        (
-            "The site will not serve that to this part of the world. A proxy somewhere else "
-            "(Settings > Network) is the usual way round."
-        ),
+        "It isn't available in your country. A proxy in Settings > Network can help.",
     ),
-    (
-        unrecognised,
-        (
-            "Neither yt-dlp nor gallery-dl found anything to download there. Either the site "
-            "changed how it serves media, or the link has nothing on it. Repair moves to the "
-            "nightly yt-dlp, which often knows about a change first."
-        ),
-    ),
+    (unrecognised, "There's nothing to download at that link. If there should be, press Repair."),
     (
         any_of("unavailable", "removed", "has been deleted", "404", "does not exist"),
-        "The site says it is gone.",
+        "The site says it's gone.",
     ),
     # After "gone" on purpose: a 404 arrives as "unable to download webpage", and
     # sending someone to check their connection for a missing page is wrong.
     (
         bot_check,
-        (
-            "The site turned the request away. Repair clears yt-dlp's cache, moves to the "
-            "nightly yt-dlp and tries again. Signing in (Settings > Sign-in) is the next step "
-            "if that is not enough."
-        ),
+        "The site blocked the download. Press Repair, and if that doesn't work, sign in.",
     ),
     (
         any_of(
@@ -164,19 +136,14 @@ RULES: tuple[Rule, ...] = (
             "network is unreachable",
             "ssl",
         ),
-        "That looks like the connection rather than the page. Keepsake retries by itself.",
+        "Couldn't connect. Keepsake will try again.",
     ),
     (
         any_of("ffmpeg", "ffprobe", "postprocessing"),
-        (
-            "Merging or converting failed. Try Container: original, or turn off embedding "
-            "under Options."
-        ),
+        "Converting failed. Try Container: Original, or turn off embedding in Options.",
     ),
 )
-OTHERWISE = (
-    "No more was said about why. If the site changed something recently, Repair usually fixes it."
-)
+OTHERWISE = "It failed without saying why. Press Repair to try the newest yt-dlp."
 
 
 def advice(message: str) -> str:

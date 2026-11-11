@@ -7,7 +7,8 @@ from pathlib import Path
 
 from keepsake.options import MODES
 
-URL = re.compile(r"""https?://[^\s<>"']+""")
+# Phone keyboards start a paste with a capital, as in "Https://".
+URL = re.compile(r"""https?://[^\s<>"']+""", re.IGNORECASE)
 SEARCH = re.compile(r"^(yt|sc)search(date|all)?\d*:.+$")
 LINK_FILES = (".txt", ".url", ".csv", ".md", ".html", ".htm")
 
@@ -59,7 +60,8 @@ def kind(path: str | Path) -> str | None:
 
 def tidy_url(url: str) -> str:
     """Remove punctuation a sentence put after a link, but keep a Wikipedia title's ')'."""
-    url = url.rstrip(".,;>]")
+    scheme, sep, rest = url.partition("://")
+    url = (scheme.lower() + sep + rest).rstrip(".,;>]")
     while url.endswith(")") and url.count(")") > url.count("("):
         url = url[:-1].rstrip(".,;")
     return url

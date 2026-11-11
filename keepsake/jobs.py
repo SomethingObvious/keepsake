@@ -235,6 +235,7 @@ class YtDlpReader:
         """Read into this job."""
         self.job = job
         self.last_error = ""
+        self.seen: set[str] = set()
 
     def __call__(self, line: str) -> None:
         """Read one line."""
@@ -250,8 +251,10 @@ class YtDlpReader:
             return
         self.job.log.append(line)
         if line.startswith("ERROR:"):
+            # yt-dlp repeats one error for every request it hits, so each is counted once.
+            self.job.errors += line not in self.seen
+            self.seen.add(line)
             self.last_error = line
-            self.job.errors += 1
         elif any(sign in line for sign in PASSED_OVER):
             self.job.skipped = True
 

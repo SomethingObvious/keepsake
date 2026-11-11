@@ -72,7 +72,7 @@ def test_a_flaky_failure_is_retried_later_and_a_refusal_can_be_repaired(queue: Q
     queue.settle(refused, ok=False, message="ERROR: [youtube] a: HTTP Error 403: Forbidden")
     assert refused.status == "failed"
     assert refused.repairable
-    assert "turned the request away" in refused.advice
+    assert "blocked the download" in refused.advice
     # Advice that names Repair always comes with the button.
     vague = Job(url="https://x/3", mode="video", options=Options(), tool="yt-dlp")
     queue.settle(vague, ok=False, message="ERROR: something nobody expected")

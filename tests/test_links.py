@@ -24,6 +24,11 @@ def test_the_same_link_twice_is_one_download() -> None:
     assert extract_urls("https://a.com/1\nhttps://a.com/1") == ["https://a.com/1"]
 
 
+def test_links_are_found_whatever_the_case_of_https() -> None:
+    """Gboard turns a pasted or typed link into "Https://"."""
+    assert extract_urls("Https://youtu.be/AbC") == ["https://youtu.be/AbC"]
+
+
 def test_a_bookmarklet_link_carries_its_mode(tmp_path: Path) -> None:
     """keepsake:// links name the page and optionally the mode; files hold lists of links."""
     listing = tmp_path / "links.txt"

@@ -10,16 +10,16 @@ from keepsake.failures import advice, bot_check, needs_sign_in, plainly, transie
     [
         ("ERROR: [Instagram] ABC: login required", "signed in"),
         ("ERROR: [youtube] xyz: Sign in to confirm you're not a bot", "signed in"),
-        ("ERROR: Failed to decrypt with DPAPI", "Firefox"),
+        ("ERROR: Failed to decrypt with DPAPI", "Chrome locks"),
         ("ERROR: Could not copy Chrome cookie database", "Close it"),
         ("ERROR: [instagram] def: This video is private", "private"),
-        ("ERROR: HTTP Error 429: Too Many Requests", "slow down"),
-        ("ERROR: [generic] Unsupported URL: https://example.com/", "Neither yt-dlp"),
+        ("ERROR: HTTP Error 429: Too Many Requests", "slower pace"),
+        ("ERROR: [generic] Unsupported URL: https://example.com/", "nothing to download"),
         ("ERROR: [generic] x: Unable to download webpage: HTTP Error 404: Not Found", "gone"),
-        ("ERROR: [youtube] x: HTTP Error 403: Forbidden", "turned the request away"),
-        ("ERROR: Unable to download webpage: [Errno 11001] getaddrinfo failed", "connection"),
-        ("ERROR: Postprocessing: ffmpeg exited with code 1", "Merging"),
-        ("ERROR: something nobody has classified", "No more was said"),
+        ("ERROR: [youtube] x: HTTP Error 403: Forbidden", "blocked the download"),
+        ("ERROR: Unable to download webpage: [Errno 11001] getaddrinfo failed", "connect"),
+        ("ERROR: Postprocessing: ffmpeg exited with code 1", "Converting failed"),
+        ("ERROR: something nobody has classified", "without saying why"),
     ],
 )
 def test_each_refusal_names_its_own_remedy(message: str, expected: str) -> None:

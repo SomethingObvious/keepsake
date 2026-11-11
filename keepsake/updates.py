@@ -131,7 +131,7 @@ class Updater:
                     "Update failed: " + (result.stderr.strip().splitlines() or ["pip refused"])[-1]
                 )
             else:
-                self.note = ("Updated " + ", ".join(moved)) if moved else "Both are already current"
+                self.note = ("Updated " + ", ".join(moved)) if moved else "Already up to date"
         except (OSError, subprocess.TimeoutExpired) as problem:
             self.note = f"Update failed: {problem}"
         finally:

@@ -72,6 +72,9 @@ def test_errors_are_kept_for_the_advice() -> None:
     assert reader.last_error == "ERROR: [youtube] x: Video unavailable"
     assert job.errors == 2
     assert list(job.log)[-1] == "ERROR: [youtube] x: Video unavailable"
+    # The same line again is the same problem, not another failed item.
+    reader("ERROR: first")
+    assert job.errors == 2
 
 
 def test_gallery_dl_is_read_from_the_paths_it_prints(tmp_path: Path) -> None:
